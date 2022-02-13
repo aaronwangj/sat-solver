@@ -1,6 +1,7 @@
 import sys
 import random
 import time
+import pathlib
 class Solver:
   varSet = set()
   cnfList = []
@@ -9,7 +10,7 @@ class Solver:
   def __init__(self, filename):
     f = open(filename, 'r')
     line = f.readline()
-    self.filename = filename
+    self.filename = str(pathlib.PurePath(filename))
     while line[0] != 'p':
       line = f.readline()
     tokens = line.split()
@@ -20,20 +21,24 @@ class Solver:
     for _ in range(cnfSize):
       line = f.readline()
       lineSplitted = line.split()
-      cnf = set([int(v) for v in lineSplitted][:-1])
-      self.cnfList.append(cnf)
+      clause = set([int(v) for v in lineSplitted][:-1])
+      self.cnfList.append(clause)
     f.close()
 
   def solve(self):
     # start timing
     start_time = time.time()
-    # remove pure literals
-
     # remove unit literals
-    sat, assignment = self.recursiveSolve(self.varSet, self.cnfList)
+    sat = False
+    assignment = set()
+    if self.removeUnitLiterals():
+      print('unit literals removed')
+      self.removePureLiterals()
+      print('pure literals removed')
+      sat, assignment = self.recursiveSolve(self.varSet, self.cnfList)
+      if sat:
+        assignment = sorted(self.assignment.union(assignment), key = lambda x: abs(x))
     end_time = time.time()
-    # end timing
-    assignment = sorted(assignment.union(self.assignment), key = lambda x: abs(x))
     res = {}
     res['Instance'] = self.filename
     res['Result'] = 'SAT' if sat else 'UNSAT'
@@ -42,14 +47,57 @@ class Solver:
     return res
 
   def removeUnitLiterals(self):
-    observed = set()
     # go through all clauses
     for clause in self.cnfList:
-      if len(clause) == 1 and -clause.peek() not in observed:
-        observed.add(clause.peek())
-
+      if len(clause) == 1:
+        literal = next(iter(clause))
+        if -literal in self.assignment:
+          return False
+        elif literal not in self.assignment:
+          self.varSet.remove(abs(literal))
+          self.assignment.add(literal)
+    newCnfList = []
+    for clause in self.cnfList:
+      append = True
+      newClause = clause.copy()
+      for literal in clause:
+        if literal in self.assignment:
+          append = False
+          break
+        if -literal in self.assignment:
+          newClause.remove(literal)
+      if append:
+        newCnfList.append(newClause)
+    self.cnfList = newCnfList
     return True
 
+  def removePureLiterals(self):
+    observed = set()
+    for clause in self.cnfList:
+      for literal in clause:
+        observed.add(literal)
+    newVarSet = self.varSet.copy()
+    for var in self.varSet:
+      if var not in observed or -var not in observed:
+        newVarSet.remove(var)
+        if -var in observed:
+          self.assignment.add(-var)
+        else:
+          self.assignment.add(var)
+    newCnfList = []
+    for clause in self.cnfList:
+      append = True
+      newClause = clause.copy()
+      for literal in clause:
+        if literal in self.assignment:
+          append = False
+          break
+        if -literal in self.assignment:
+          newClause.remove(literal)
+      if append:
+        newCnfList.append(newClause)
+    self.varSet = newVarSet
+    self.cnfList = newCnfList
 
   def randomLiteral(self, curVarSet, curCnfList):
     # purely random
@@ -93,15 +141,15 @@ class Solver:
     newVarSet = curVarSet.copy()
     newVarSet.remove(abs(literal))
     newCnfList = []
-    for cnf in curCnfList:
-      if literal in cnf:
+    for clause in curCnfList:
+      if literal in clause:
         continue
-      elif -literal in cnf:
-        newCnf = cnf.copy()
+      elif -literal in clause:
+        newCnf = clause.copy()
         newCnf.remove(-literal)
         newCnfList.append(newCnf)
       else:
-        newCnfList.append(cnf.copy())
+        newCnfList.append(clause.copy())
     return newVarSet, newCnfList
 
   def recursiveSolve(self, curVarSet, curCnfList):
@@ -109,7 +157,7 @@ class Solver:
     if not curCnfList:
       return True, curVarSet
     if set() in curCnfList:
-      return False, None
+      return False, set()
     # choose a random literal from curVarSet
     literal = self.twoSidedJeroslowWangLiteral(curVarSet, curCnfList)
     # Branch 1
@@ -124,7 +172,7 @@ class Solver:
     if sat:
       assignment.add(-literal)
       return sat, assignment
-    return False, None
+    return False, set()
     
     
 
@@ -133,31 +181,9 @@ def main():
   if len(args) != 2:
     print('ussage error : python3 sat_solver.py [FILENAME.cnf]')
     return
-  # varSet, cnfList = read_cnf(args[1])
-  # print(varSet)
-  # print(cnfList)
   solver = Solver(args[1])
-  # print(solver.varSet)
-  # print(solver.cnfList)
   res = solver.solve()
   print(res)
-
-def read_cnf(filename):
-  f = open(filename, 'r')
-  line = f.readline()
-  while line[0] != 'p':
-    line = f.readline()
-  tokens = line.split()
-  varSize = int(tokens[2])
-  cnfSize = int(tokens[3])
-  varSet = set(range(1, varSize+1))
-  cnfList = []
-  for _ in range(cnfSize):
-    line = f.readline()
-    lineSplitted = line.split()
-    cnf = set([int(v) for v in lineSplitted][:-1])
-    cnfList.append(cnf)
-  return varSet, cnfList
 
 
 
