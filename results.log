@@ -11,9 +11,6 @@
 {"Instance": "C210_30", "Time": "--", "Result": "--"}
 {"Instance": "C210_55", "Time": "--", "Result": "--"}
 {"Instance": "C459_4675", "Time": "--", "Result": "--"}
-{'Instance': 'input/toy_infeasible.cnf', 'Result': 'UNSAT', 'Time': '0.00'}
-{'Instance': 'input/toy_simple.cnf', 'Result': 'SAT', 'Solution': '1 true 2 true 3 false', 'Time': '0.00'}
-{'Instance': 'input/toy_solveable.cnf', 'Result': 'SAT', 'Solution': '1 false 2 true 3 true 4 false 5 true 6 true 7 true 8 false 9 false 10 true 11 false 12 true 13 true 14 false 15 true 16 true 17 true 18 true 19 false 20 true 21 true 22 false 23 false 24 false 25 false 26 false', 'Time': '0.00'}
 {"Instance": "U50_1065_038", "Time": "--", "Result": "--"}
 {"Instance": "U50_1065_045", "Time": "--", "Result": "--"}
 {"Instance": "U50_4450_035", "Time": "--", "Result": "--"}
