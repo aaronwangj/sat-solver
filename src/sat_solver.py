@@ -29,7 +29,7 @@ class Solver:
   def solve(self):
     # start timing
     result = {}
-    result['Instance'] = self.filename
+    result["Instance"] = self.filename
     start_time = time.time()
     # remove unit literals
     sat = False
