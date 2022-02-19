@@ -7,6 +7,7 @@ class Solver:
   cnfList = []
   filename = ''
   assignment = set()
+  cnt = 0
   def __init__(self, filename):
     f = open(filename, 'r')
     line = f.readline()
@@ -27,33 +28,42 @@ class Solver:
 
   def solve(self):
     # start timing
+    result = {}
+    result['Instance'] = self.filename
     start_time = time.time()
     # remove unit literals
     sat = False
     assignment = set()
-    if self.removeUnitLiterals():
-      print('unit literals removed')
-      self.removePureLiterals()
-      print('pure literals removed')
-      sat, assignment = self.recursiveSolve(self.varSet, self.cnfList)
-      if sat:
-        assignment = sorted(self.assignment.union(assignment), key = lambda x: abs(x))
+    changed = True
+    while changed:
+      sat, tmp1 = self.removeUnitLiterals()
+      if not sat:
+        end_time = time.time()
+        result['Result'] = 'UNSAT'
+        result['Time'] = '%f' % (end_time-start_time)
+        return result
+      tmp2 = self.removePureLiterals()
+      changed = tmp1 or tmp2
+    sat, assignment = self.recursiveSolve(self.varSet, self.cnfList)
+    if sat:
+      assignment = sorted(self.assignment.union(assignment), key = lambda x: abs(x))
     end_time = time.time()
-    res = {}
-    res['Instance'] = self.filename
-    res['Result'] = 'SAT' if sat else 'UNSAT'
-    res['Solution'] = ' '.join(['%d True' % (v) if v > 0 else '%d False' % (-v) for v in assignment])
-    res['Time'] = '%f' % (end_time-start_time)
-    return res
+    result['Result'] = 'SAT' if sat else 'UNSAT'
+    if sat:
+      result['Solution'] = ' '.join(['%d true' % (v) if v > 0 else '%d false' % (-v) for v in assignment])
+    result['Time'] = '%.2f' % (end_time-start_time)
+    return result
 
   def removeUnitLiterals(self):
     # go through all clauses
+    changed = False
     for clause in self.cnfList:
       if len(clause) == 1:
         literal = next(iter(clause))
         if -literal in self.assignment:
-          return False
+          return False, True
         elif literal not in self.assignment:
+          changed = True
           self.varSet.remove(abs(literal))
           self.assignment.add(literal)
     newCnfList = []
@@ -69,9 +79,10 @@ class Solver:
       if append:
         newCnfList.append(newClause)
     self.cnfList = newCnfList
-    return True
+    return True, changed
 
   def removePureLiterals(self):
+    changed = False
     observed = set()
     for clause in self.cnfList:
       for literal in clause:
@@ -79,6 +90,7 @@ class Solver:
     newVarSet = self.varSet.copy()
     for var in self.varSet:
       if var not in observed or -var not in observed:
+        changed = True
         newVarSet.remove(var)
         if -var in observed:
           self.assignment.add(-var)
@@ -98,6 +110,7 @@ class Solver:
         newCnfList.append(newClause)
     self.varSet = newVarSet
     self.cnfList = newCnfList
+    return changed
 
   def randomLiteral(self, curVarSet, curCnfList):
     # purely random
@@ -153,13 +166,16 @@ class Solver:
     return newVarSet, newCnfList
 
   def recursiveSolve(self, curVarSet, curCnfList):
+    self.cnt += 1
+    if self.cnt % 100000 == 0:
+      print('cnt: %d' % (self.cnt))
     # check initial condition
     if not curCnfList:
       return True, curVarSet
     if set() in curCnfList:
       return False, set()
     # choose a random literal from curVarSet
-    literal = self.twoSidedJeroslowWangLiteral(curVarSet, curCnfList)
+    literal = self.jeroslowWangLiteral(curVarSet, curCnfList)
     # Branch 1
     newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, literal)
     sat, assignment = self.recursiveSolve(newVarSet, newCnfList)
@@ -179,7 +195,7 @@ class Solver:
 def main():
   args = sys.argv
   if len(args) != 2:
-    print('ussage error : python3 sat_solver.py [FILENAME.cnf]')
+    print('usage error : python3 sat_solver.py [FILENAME.cnf]')
     return
   solver = Solver(args[1])
   res = solver.solve()
