@@ -2,6 +2,7 @@ import sys
 import random
 import time
 import pathlib
+import json
 class Solver:
   varSet = set()
   cnfList = []
@@ -199,9 +200,7 @@ def main():
     return
   solver = Solver(args[1])
   res = solver.solve()
-  print(res)
-
-
+  print(json.dumps(res))
 
 if __name__ == '__main__':
   main()
