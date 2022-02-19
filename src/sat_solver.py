@@ -1,8 +1,8 @@
 import sys
 import random
 import time
-import pathlib
 import json
+import os
 class Solver:
   varSet = set()
   cnfList = []
@@ -12,7 +12,7 @@ class Solver:
   def __init__(self, filename):
     f = open(filename, 'r')
     line = f.readline()
-    self.filename = str(pathlib.PurePath(filename))
+    self.filename = os.path.basename(os.path.normpath(filename))
     while line[0] != 'p':
       line = f.readline()
     tokens = line.split()
