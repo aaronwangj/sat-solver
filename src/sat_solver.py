@@ -220,9 +220,9 @@ def main():
     print('usage error : python3 sat_solver.py [FILENAME.cnf]')
     return
   solver = Solver(args[1])
-  for i in range(10):
+  for i in range(5):
     # Start the timer. Once 5 seconds are over, a SIGALRM signal is sent.
-    signal.alarm(60)    
+    signal.alarm(59)    
     # This try/except loop ensures that 
     #   you'll catch TimeoutException when it's sent.
     try:
