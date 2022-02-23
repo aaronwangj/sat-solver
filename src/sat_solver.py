@@ -176,7 +176,7 @@ class Solver:
     if set() in curCnfList:
       return False, set()
     # choose a random literal from curVarSet
-    literal = self.jeroslowWangLiteral(curVarSet, curCnfList)
+    literal = self.twoSidedJeroslowWangLiteral
     # Branch 1
     newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, literal)
     sat, assignment = self.recursiveSolve(newVarSet, newCnfList)
