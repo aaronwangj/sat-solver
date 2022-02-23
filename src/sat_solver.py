@@ -24,12 +24,13 @@ class Solver:
       lineSplitted = line.split()
       clause = set([int(v) for v in lineSplitted][:-1])
       self.cnfList.append(clause)
+    print(varSize, cnfSize)
     f.close()
 
   def solve(self):
     # start timing
     result = {}
-    result["Instance"] = self.filename[:-4]
+    result["Instance"] = self.filename[:-4] if self.filename[-4:] == '.cnf' else self.filename
     start_time = time.time()
     # remove unit literals
     sat = False
@@ -44,6 +45,7 @@ class Solver:
         return result
       tmp2 = self.removePureLiterals()
       changed = tmp1 or tmp2
+    print(len(self.varSet), len(self.cnfList))
     sat, assignment = self.recursiveSolve(self.varSet, self.cnfList)
     if sat:
       assignment = sorted(self.assignment.union(assignment), key = lambda x: abs(x))
