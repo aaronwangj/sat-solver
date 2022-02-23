@@ -8,7 +8,6 @@ class Solver:
   cnfList = []
   filename = ''
   assignment = set()
-  cnt = 0
   def __init__(self, filename):
     f = open(filename, 'r')
     line = f.readline()
@@ -167,9 +166,6 @@ class Solver:
     return newVarSet, newCnfList
 
   def recursiveSolve(self, curVarSet, curCnfList):
-    self.cnt += 1
-    if self.cnt % 100000 == 0:
-      print('cnt: %d' % (self.cnt))
     # check initial condition
     if not curCnfList:
       return True, curVarSet
