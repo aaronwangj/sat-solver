@@ -37,14 +37,15 @@ class Solver:
     assignment = set()
     changed = True
     while changed:
-      sat, tmp1 = self.removeUnitLiterals()
-      if not sat:
-        end_time = time.time()
-        result['Result'] = 'UNSAT'
-        result['Time'] = '%f' % (end_time-start_time)
-        return result
+      # sat, tmp1 = self.removeUnitLiterals()
+      # if not sat:
+      #   end_time = time.time()
+      #   result['Result'] = 'UNSAT'
+      #   result['Time'] = '%f' % (end_time-start_time)
+      #   return result
       tmp2 = self.removePureLiterals()
-      changed = tmp1 or tmp2
+      # changed = tmp1 or tmp2
+      changed = tmp2
     sat, assignment = self.recursiveSolve(self.varSet, self.cnfList)
     if sat:
       assignment = sorted(self.assignment.union(assignment), key = lambda x: abs(x))
@@ -52,7 +53,7 @@ class Solver:
     result['Result'] = 'SAT' if sat else 'UNSAT'
     if sat:
       result['Solution'] = ' '.join(['%d true' % (v) if v > 0 else '%d false' % (-v) for v in assignment])
-    result['Time'] = '%.2f' % (end_time-start_time)
+    result['Time'] = '%f' % (end_time-start_time)
     return result
 
   def removeUnitLiterals(self):
