@@ -3,6 +3,10 @@ import random
 import time
 import json
 import os
+import numba
+import signal
+
+
 class Solver:
   varSet = set()
   cnfList = []
@@ -113,12 +117,16 @@ class Solver:
     self.cnfList = newCnfList
     return changed
 
+  # @staticmethod
+  # @numba.jit()     
   def randomLiteral(self, curVarSet, curCnfList):
     # purely random
     var = random.sample(curVarSet, 1)[0]
     literal = -var if random.getrandbits(1) else var
     return literal
 
+  # @staticmethod
+  # @numba.jit()     
   def jeroslowWangLiteral(self, curVarSet, curCnfList):
     scores = {}
     for v in curVarSet:
@@ -135,6 +143,8 @@ class Solver:
           bestLiteral = literal
     return bestLiteral
 
+  # @staticmethod
+  # @numba.jit()     
   def twoSidedJeroslowWangLiteral(self, curVarSet, curCnfList):
     scores = {}
     for v in curVarSet:
@@ -151,6 +161,8 @@ class Solver:
           bestVariable = abs(literal)
     return bestVariable if scores[bestVariable] > scores[-bestVariable] else -bestVariable  
 
+  # @staticmethod
+  # @numba.jit()     
   def chooseBranch(self, curVarSet, curCnfList, literal):
     newVarSet = curVarSet.copy()
     newVarSet.remove(abs(literal))
@@ -191,15 +203,40 @@ class Solver:
       return sat, assignment
     return False, set()
     
-    
+class TimeoutException(Exception):   # Custom exception class
+    pass
 
+def timeout_handler(signum, frame):   # Custom signal handler
+    raise TimeoutException
+
+# Change the behavior of SIGALRM
+signal.signal(signal.SIGALRM, timeout_handler)
+
+    
+@numba.jit(cache=True)
 def main():
   args = sys.argv
   if len(args) != 2:
     print('usage error : python3 sat_solver.py [FILENAME.cnf]')
     return
   solver = Solver(args[1])
-  res = solver.solve()
+  for i in range(10):
+    # Start the timer. Once 5 seconds are over, a SIGALRM signal is sent.
+    signal.alarm(60)    
+    # This try/except loop ensures that 
+    #   you'll catch TimeoutException when it's sent.
+    try:
+        res = solver.solve() # Whatever your function that might hang
+        print(json.dumps(res))
+        return
+    except TimeoutException:
+        continue # continue the for loop if function A takes more than 5 second
+
+  res = {}
+  res["Instance"] = args[1][:-4]
+  res["Result"] = 'UNSAT'
+  res['Time'] = 0.00
+
   print(json.dumps(res))
 
 if __name__ == '__main__':
