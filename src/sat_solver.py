@@ -118,6 +118,36 @@ class Solver:
     literal = -var if random.getrandbits(1) else var
     return literal
 
+  def dlcsLiteral(self, curVarSet, curCnfList):
+    scores = {}
+    for v in curVarSet:
+      scores[v] = 0
+      scores[-v] = 0
+    bestScore = -1
+    bestVariable = 0
+    for clause in curCnfList:
+      for literal in clause:
+        scores[literal] += 1
+        if bestScore < scores[literal] + scores[-literal]:
+          bestScore = scores[literal] + scores[-literal]
+          bestVariable = abs(literal)
+    return bestVariable if scores[bestVariable] > scores[-bestVariable] else -bestVariable
+  
+  def dlisLiteral(self, curVarSet, curCnfList):
+    scores = {}
+    for v in curVarSet:
+      scores[v] = 0
+      scores[-v] = 0
+    bestScore = -1
+    bestLiteral = 0
+    for clause in curCnfList:
+      for literal in clause:
+        scores[literal] += 1
+        if bestScore < scores[literal]:
+          bestScore = scores[literal]
+          bestLiteral = literal
+    return bestLiteral
+
   def jeroslowWangLiteral(self, curVarSet, curCnfList):
     scores = {}
     for v in curVarSet:
@@ -172,7 +202,7 @@ class Solver:
     if set() in curCnfList:
       return False, set()
     # choose a random literal from curVarSet
-    literal = self.jeroslowWangLiteral(curVarSet, curCnfList)
+    literal = self.dlcsLiteral(curVarSet, curCnfList)
     # Branch 1
     newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, literal)
     sat, assignment = self.recursiveSolve(newVarSet, newCnfList)
