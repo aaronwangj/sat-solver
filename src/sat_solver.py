@@ -31,7 +31,7 @@ class Solver:
     self.heurDistribution = [0.03, 0.47, 0.2, 0.2, 0.1]
     self.numProcesses = 5
     self.heuristics = {}
-    self.heuristics[-1] = self.randomLiteral
+    self.heuristics[-1] = self.randomLiteral # -1 should be the reserved key for randomLiteral
     self.heuristics[0] = self.twoSidedJeroslowWangLiteral
     self.heuristics[1] = self.jeroslowWangLiteral
     self.heuristics[2] = self.dlcsLiteral
