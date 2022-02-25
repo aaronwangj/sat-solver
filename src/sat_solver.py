@@ -1,5 +1,6 @@
 from hashlib import new
 from multiprocessing import Process, Value, Array, Manager
+from numpy.random import choice
 import sys
 import random
 import time
@@ -239,7 +240,7 @@ class Solver:
 
   def mixedLiteral(self, curVarSet, curCnfList):
     # choose a heuristics randomly and apply
-    return self.heuristics[random.choice((range(self.numDetermHeurstics)), [0.5, 0.2, 0.2, 0.1])](curVarSet, curCnfList)
+    return self.heuristics[choice(range(self.numDetermHeurstics), 1, [0.5, 0.2, 0.2, 0.1])[0]](curVarSet, curCnfList)
 
   ### update variable set and cnf list when literal is chosen
   def chooseBranch(self, curVarSet, curCnfList, literal):
