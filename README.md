@@ -53,10 +53,8 @@ Instead of choosing heuristics identically for all nodes on the search tree, we 
 We could have also implemented switching concurrently between two possibile branches of a variable instead of sequentially traversing one branch and then the other one. Using threads may be helpful here, but we need to make sure that we do not double the number of threads for every depth to avoid concurrency issues like thread contention.
 
 ## PIIs
-(Aaron, awang167, a)
-
-(Junewoo, jpark49, Computer)
+(Aaron, awang167, a) and (Junewoo, jpark49, Computer)
 
 ## Time spent
 
-12 hrs = 3 hrs (for naive implementation) + 4 hrs (for trying various strategies) + 4 hrs (for experiments) + 1hr (for report)
+12 hrs = 3 hrs (naive implementation) + 4 hrs (various strategies) + 4 hrs (experiments) + 1hr (report)
