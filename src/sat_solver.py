@@ -1,11 +1,7 @@
 from hashlib import new
 from multiprocessing import Process, Value, Array, Manager
 from numpy.random import choice
-import sys
-import random
-import time
-import json
-import os
+import sys, random, time, json, os
 from tkinter import N
 
 class Solver:
@@ -32,6 +28,7 @@ class Solver:
 
     # initialize heuristics 
     self.numDetermHeurstics = 4
+    self.heurDistribution = [0.5, 0.2, 0.2, 0.1]
     self.numProcesses = 5
     self.heuristics = {}
     self.heuristics[0] = self.twoSidedJeroslowWangLiteral
@@ -240,7 +237,7 @@ class Solver:
 
   def mixedLiteral(self, curVarSet, curCnfList):
     # choose a heuristics randomly and apply
-    return self.heuristics[choice(range(self.numDetermHeurstics), 1, [0.5, 0.2, 0.2, 0.1])[0]](curVarSet, curCnfList)
+    return self.heuristics[choice(range(self.numDetermHeurstics), 1, self.heurDistribution)[0]](curVarSet, curCnfList)
 
   ### update variable set and cnf list when literal is chosen
   def chooseBranch(self, curVarSet, curCnfList, literal):
