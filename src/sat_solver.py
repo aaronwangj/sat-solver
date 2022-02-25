@@ -1,4 +1,5 @@
 from hashlib import new
+from multiprocessing import Process, Value, Array
 import sys
 import random
 import time
@@ -31,11 +32,23 @@ class Solver:
     f.close()
 
   def solve(self):
+    self.processes = [None]*4
+    self.sat = Value('i', 0)
+    self.assignment = Array('i', [0]*self.varSize)
+    self.done = Value('i', -1)
+    self.heuristics = [self.twoSidedJeroslowWangLiteral, self.jeroslowWangLiteral, self.dlcsLiteral, self.dlisLiteral]
     # solve
     start_time = time.time()
-    assignment = set()
-    sat, assignment = self.recursiveSolve(self.cnfList, self.varSet, assignment)
+    for i in range(4):
+      self.processes[i] = Process(target = self.singleSolve, args = (set(), i,))
+      self.processes[i].start()
+    while self.done.value == -1:
+      continue
     end_time = time.time()
+    sat = self.sat.value
+    assignment = self.assignment
+    for i in range(4):
+      self.processes[i].terminate()
     # record
     result = {}
     result["Instance"] = self.filename[:-4] if self.filename[-4:] == '.cnf' else self.filename
@@ -45,6 +58,15 @@ class Solver:
     result['Result'] = 'SAT' if sat else 'UNSAT'
     result['Time'] = '%.2f' % (end_time-start_time)
     return result
+  
+  def singleSolve(self, assignment, index):
+    sat, assignment = self.recursiveSolve(self.cnfList, self.varSet, assignment, heuristics= self.heuristics[index])
+    self.sat.value = sat
+    for i, elt in enumerate(assignment):
+      self.assignment[i] = elt
+    self.done.value = index
+    return
+
   
   def removeUnitLiterals(self, cnfList, varSet, assignment):
     # go through all clauses
