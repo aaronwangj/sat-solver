@@ -31,21 +31,6 @@ class Solver:
     f.close()
 
   def solve(self):
-    # remove unit literals
-    # sat = False
-    # assignment = set()
-    # changed = True
-    # while changed:
-    #   sat, tmp1 = self.removeUnitLiterals()
-    #   if not sat:
-    #     end_time = time.time()
-    #     result['Result'] = 'UNSAT'
-    #     result['Time'] = '%f' % (end_time-start_time)
-    #     return result
-    #   tmp2 = self.removePureLiterals()
-    #   changed = tmp1 or tmp2
-    # print(len(self.varSet), len(self.cnfList))
-
     # solve
     start_time = time.time()
     assignment = set()
@@ -58,7 +43,7 @@ class Solver:
       assignment = sorted(assignment, key = lambda x: abs(x))
       result['Solution'] = ' '.join(['%d true' % (v) if v > 0 else '%d false' % (-v) for v in assignment])
     result['Result'] = 'SAT' if sat else 'UNSAT'
-    result['Time'] = '%f' % (end_time-start_time)
+    result['Time'] = '%.2f' % (end_time-start_time)
     return result
   
   def removeUnitLiterals(self, cnfList, varSet, assignment):
@@ -123,64 +108,6 @@ class Solver:
         newCnfList.append(newClause)
     assert len(newVarSet) + len(newAssignment) == self.varSize
     return changed, newCnfList, newVarSet, newAssignment
-
-  # def removeUnitLiterals(self):
-  #   # go through all clauses
-  #   changed = False
-  #   for clause in self.cnfList:
-  #     if len(clause) == 1:
-  #       literal = next(iter(clause))
-  #       if -literal in self.assignment:
-  #         return False, True
-  #       elif literal not in self.assignment:
-  #         changed = True
-  #         self.varSet.remove(abs(literal))
-  #         self.assignment.add(literal)
-  #   newCnfList = []
-  #   for clause in self.cnfList:
-  #     append = True
-  #     newClause = clause.copy()
-  #     for literal in clause:
-  #       if literal in self.assignment:
-  #         append = False
-  #         break
-  #       if -literal in self.assignment:
-  #         newClause.remove(literal)
-  #     if append:
-  #       newCnfList.append(newClause)
-  #   self.cnfList = newCnfList
-  #   return True, changed
-
-  # def removePureLiterals(self):
-  #   changed = False
-  #   observed = set()
-  #   for clause in self.cnfList:
-  #     for literal in clause:
-  #       observed.add(literal)
-  #   newVarSet = self.varSet.copy()
-  #   for var in self.varSet:
-  #     if var not in observed or -var not in observed:
-  #       changed = True
-  #       newVarSet.remove(var)
-  #       if -var in observed:
-  #         self.assignment.add(-var)
-  #       else:
-  #         self.assignment.add(var)
-  #   newCnfList = []
-  #   for clause in self.cnfList:
-  #     append = True
-  #     newClause = clause.copy()
-  #     for literal in clause:
-  #       if literal in self.assignment:
-  #         append = False
-  #         break
-  #       if -literal in self.assignment:
-  #         newClause.remove(literal)
-  #     if append:
-  #       newCnfList.append(newClause)
-  #   self.varSet = newVarSet
-  #   self.cnfList = newCnfList
-  #   return changed
 
   def randomLiteral(self, curVarSet, curCnfList):
     # purely random
@@ -266,8 +193,10 @@ class Solver:
         newCnfList.append(clause.copy())
     return newVarSet, newCnfList
 
-  def recursiveSolve(self, curCnfList, curVarSet, assignment):
-    # initial condigion
+  def recursiveSolve(self, curCnfList, curVarSet, assignment, heuristics = None):
+    if heuristics == None:
+      heuristics = self.twoSidedJeroslowWangLiteral
+    # initial condition
     if not curCnfList:
       return True, curVarSet.union(assignment)
     if set() in curCnfList:
@@ -287,12 +216,12 @@ class Solver:
       return False, set()
 
     # choose a random literal from curVarSet
-    literal = self.twoSidedJeroslowWangLiteral(curVarSet, curCnfList)
+    literal = heuristics(curVarSet, curCnfList)
 
     # Branch 1
     newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, literal)
     assignment.add(literal)
-    sat, newAssignment = self.recursiveSolve(newCnfList, newVarSet, assignment)
+    sat, newAssignment = self.recursiveSolve(newCnfList, newVarSet, assignment, heuristics)
     if sat:
       return sat, newAssignment
 
@@ -300,37 +229,13 @@ class Solver:
     assignment.remove(literal)
     newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, -literal)
     assignment.add(-literal)
-    sat, newAssignment = self.recursiveSolve(newCnfList, newVarSet, assignment)
+    sat, newAssignment = self.recursiveSolve(newCnfList, newVarSet, assignment, heuristics)
     if sat:
       return sat, newAssignment
     
     # Both branch failed
     return False, set()
-
-  # def recursiveSolve(self, curVarSet, curCnfList):
-  #   # check initial condition
-  #   if not curCnfList:
-  #     return True, curVarSet
-  #   if set() in curCnfList:
-  #     return False, set()
-  #   # choose a random literal from curVarSet
-  #   literal = self.dlcsLiteral(curVarSet, curCnfList)
-  #   # Branch 1
-  #   newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, literal)
-  #   sat, assignment = self.recursiveSolve(newVarSet, newCnfList)
-  #   if sat:
-  #     assignment.add(literal)
-  #     return sat, assignment
-  #   # Try the other branch
-  #   newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, -literal)
-  #   sat, assignment = self.recursiveSolve(newVarSet, newCnfList)
-  #   if sat:
-  #     assignment.add(-literal)
-  #     return sat, assignment
-  #   return False, set()
     
-    
-
 def main():
   args = sys.argv
   if len(args) != 2:
