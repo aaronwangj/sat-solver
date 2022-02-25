@@ -13,6 +13,7 @@ class Solver:
     f = open(filename, 'r')
     line = f.readline()
     self.filename = os.path.basename(os.path.normpath(filename))
+    print(self.filename, end = ": ")
     while line[0] != 'p':
       line = f.readline()
     tokens = line.split()
@@ -310,7 +311,7 @@ def main():
     return
   solver = Solver(args[1])
   res = solver.solve()
-  print(json.dumps(res))
+  # print(json.dumps(res))
 
 if __name__ == '__main__':
   main()
