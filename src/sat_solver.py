@@ -32,7 +32,9 @@ class Solver:
       self.cnfList.append(clause)
     f.close()
 
+  ### multiprocessor solve function
   def solve(self):
+    # shared variables
     self.manager = Manager()
     self.processes = [None]*4
     self.sat = Value('i', 0)
@@ -45,14 +47,15 @@ class Solver:
     for i in range(4):
       self.processes[i] = Process(target = self.singleSolve, args = (set(), i,))
       self.processes[i].start()
-    while self.done.value == -1:
+    while self.done.value == -1: # wait until one process finishes
       continue
     end_time = time.time()
-    sat = self.sat.value
-    assignment = self.assignment
+    # terminate processes
     for i in range(4):
       self.processes[i].terminate()
     # record
+    sat = self.sat.value
+    assignment = self.assignment
     result = {}
     result["Instance"] = self.filename[:-4] if self.filename[-4:] == '.cnf' else self.filename
     if sat:
@@ -62,41 +65,45 @@ class Solver:
     result['Time'] = '%.2f' % (end_time-start_time)
     return result
   
+  ### single-processor solve function
   def singleSolve(self, assignment, index):
     heuristics = {}
     heuristics[0] = self.twoSidedJeroslowWangLiteral
     heuristics[1] = self.jeroslowWangLiteral
     heuristics[2] = self.dlcsLiteral
     heuristics[3] = self.dlisLiteral
+    # run with the corresponding heuristics
     sat, assignment = self.recursiveSolve(self.cnfList, self.varSet, assignment, heuristics= heuristics[index])
+    # update the shared result member variables
     self.sat.value = sat
-    self.lock.acquire()
-    if self.done.value != -1:
+    self.lock.acquire() # to prevent race
+    if self.done.value != -1: # only the first process to acquire the lock can update the assignment
       return
     for i, elt in enumerate(assignment):
       self.assignment[i] = elt
     self.done.value = index
     self.lock.release()
     return
-
   
+  ### Remove unit and pure literals
   def removeUnitLiterals(self, cnfList, varSet, assignment):
-    # go through all clauses
-    assert len(varSet) + len(assignment) == self.varSize
+    # assert len(varSet) + len(assignment) == self.varSize
     newCnfList = []
     newVarSet = varSet.copy()
     newAssignment = assignment.copy()
+    # go through all clauses
     changed = False
     for clause in cnfList:
       if len(clause) == 1:
         literal = next(iter(clause))
         if -literal in newAssignment:
-          assert len(newVarSet) + len(newAssignment) == self.varSize
-          return False, True, newCnfList, newVarSet, assignment
+          # assert len(newVarSet) + len(newAssignment) == self.varSize
+          return False, True, newCnfList, newVarSet, assignment # False means that there is no possible satisfying assignment
         elif literal not in newAssignment:
           changed = True
           newVarSet.remove(abs(literal))
           newAssignment.add(literal)
+    # create the newCnfList
     for clause in cnfList:
       append = True
       newClause = clause.copy()
@@ -108,19 +115,21 @@ class Solver:
           newClause.remove(literal)
       if append:
         newCnfList.append(newClause)
-    assert len(newVarSet) + len(newAssignment) == self.varSize
+    # assert len(newVarSet) + len(newAssignment) == self.varSize
     return True, changed, newCnfList, newVarSet, newAssignment
 
   def removePureLiterals(self, cnfList, varSet, assignment):
-    assert len(varSet) + len(assignment) == self.varSize
+    # assert len(varSet) + len(assignment) == self.varSize
     newCnfList = []
     newVarSet = varSet.copy()
     newAssignment = assignment.copy()
     changed = False
     observed = set()
+    # iterate through the clauses
     for clause in cnfList:
       for literal in clause:
         observed.add(literal)
+    # update the assignment
     for var in varSet:
       if var not in observed or -var not in observed:
         changed = True
@@ -129,6 +138,7 @@ class Solver:
           newAssignment.add(-var)
         else:
           newAssignment.add(var)
+    # update the clauses
     for clause in cnfList:
       append = True
       newClause = clause.copy()
@@ -140,9 +150,10 @@ class Solver:
           newClause.remove(literal)
       if append:
         newCnfList.append(newClause)
-    assert len(newVarSet) + len(newAssignment) == self.varSize
+    # assert len(newVarSet) + len(newAssignment) == self.varSize
     return changed, newCnfList, newVarSet, newAssignment
 
+  ### Heuristics to choose a literal
   def randomLiteral(self, curVarSet, curCnfList):
     # purely random
     var = random.sample(curVarSet, 1)[0]
@@ -150,6 +161,7 @@ class Solver:
     return literal
 
   def dlcsLiteral(self, curVarSet, curCnfList):
+    # Dynamic Largest Combined Sum
     scores = {}
     for v in curVarSet:
       scores[v] = 0
@@ -165,6 +177,7 @@ class Solver:
     return bestVariable if scores[bestVariable] > scores[-bestVariable] else -bestVariable
   
   def dlisLiteral(self, curVarSet, curCnfList):
+    # Dynamic Largest Individual Sum
     scores = {}
     for v in curVarSet:
       scores[v] = 0
@@ -180,6 +193,7 @@ class Solver:
     return bestLiteral
 
   def jeroslowWangLiteral(self, curVarSet, curCnfList):
+    # JeroslowWang heuristics
     scores = {}
     for v in curVarSet:
       scores[v] = 0
@@ -196,6 +210,7 @@ class Solver:
     return bestLiteral
 
   def twoSidedJeroslowWangLiteral(self, curVarSet, curCnfList):
+    # two sided Jeroslow Wang heuristics
     scores = {}
     for v in curVarSet:
       scores[v] = 0
@@ -211,9 +226,10 @@ class Solver:
           bestVariable = abs(literal)
     return bestVariable if scores[bestVariable] > scores[-bestVariable] else -bestVariable  
 
+  ### update variable set and cnf list when literal is chosen
   def chooseBranch(self, curVarSet, curCnfList, literal):
     newVarSet = curVarSet.copy()
-    assert abs(literal) in newVarSet
+    # assert abs(literal) in newVarSet
     newVarSet.remove(abs(literal))
     newCnfList = []
     for clause in curCnfList:
@@ -227,6 +243,7 @@ class Solver:
         newCnfList.append(clause.copy())
     return newVarSet, newCnfList
 
+  ### recursive solver
   def recursiveSolve(self, curCnfList, curVarSet, assignment, heuristics = None):
     if heuristics == None:
       heuristics = self.twoSidedJeroslowWangLiteral
