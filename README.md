@@ -56,8 +56,10 @@ An idea we tried to implement was to use random restarts to avoid heavy-tailed b
 
 
 ## PIIs
-(Aaron, awang167, a) and (Junewoo, jpark49, Computer)
+(Aaron, awang167, a)
+
+(Junewoo, jpark49, Computer)
 
 ## Time spent
 
-12 hrs = 3 hrs (naive implementation) + 4 hrs (various strategies) + 4 hrs (experiments) + 1hr (report)
+12 hrs = 3 hrs (for naive implementation) + 4 hrs (for trying various strategies) + 4 hrs (for experiments) + 1hr (for report)
