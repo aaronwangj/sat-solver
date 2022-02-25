@@ -29,14 +29,14 @@ class Solver:
     # initialize heuristics 
     self.numDetermHeurstics = 4
     self.heurDistribution = [0.0, 0.5, 0.2, 0.2, 0.1] # first probability is for randomLiteral
-    self.numProcesses = 5
+    self.numProcesses = self.numDetermHeurstics + 1
     self.heuristics = {}
     self.heuristics[-1] = self.randomLiteral # -1 should be the reserved key for randomLiteral
     self.heuristics[0] = self.twoSidedJeroslowWangLiteral
     self.heuristics[1] = self.jeroslowWangLiteral
     self.heuristics[2] = self.dlcsLiteral
     self.heuristics[3] = self.dlisLiteral
-    self.heuristics[4] = self.mixedLiteral
+    self.heuristics[self.numDetermHeurstics] = self.mixedLiteral
 
   ### multiprocessor solve function
   def solve(self):
