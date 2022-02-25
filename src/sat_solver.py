@@ -10,7 +10,7 @@ class Solver:
     f = open(filename, 'r')
     line = f.readline()
     self.filename = os.path.basename(os.path.normpath(filename))
-    print(self.filename, end = ": ")
+    # print(self.filename, end = ": ")
     while line[0] != 'p':
       line = f.readline()
     tokens = line.split()
@@ -50,11 +50,11 @@ class Solver:
     # solve
     start_time = time.time()
     for i in range(self.numProcesses):
-      self.processes[i] = Process(target = self.singleSolve, args = (set(), i,))
+      self.processes[i] = Process(target = self.singleSolve, args = (i,))
       self.processes[i].start()
     while self.done.value == -1: # wait until one process finishes
       continue
-    print(self.done.value)
+    # print(self.done.value)
     end_time = time.time()
 
     # terminate processes
@@ -74,8 +74,9 @@ class Solver:
     return result
   
   ### single-processor solve function
-  def singleSolve(self, assignment, index):
+  def singleSolve(self, index):
     # run with the corresponding heuristics
+    assignment = set()
     sat, assignment = self.recursiveSolve(self.cnfList, self.varSet, assignment, heuristics= self.heuristics[index])
 
     # update the shared result member variables
