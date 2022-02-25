@@ -28,9 +28,10 @@ class Solver:
 
     # initialize heuristics 
     self.numDetermHeurstics = 4
-    self.heurDistribution = [0.47, 0.2, 0.2, 0.1, 0.03]
+    self.heurDistribution = [0.03, 0.47, 0.2, 0.2, 0.1]
     self.numProcesses = 5
     self.heuristics = {}
+    self.heuristics[-1] = self.randomLiteral
     self.heuristics[0] = self.twoSidedJeroslowWangLiteral
     self.heuristics[1] = self.jeroslowWangLiteral
     self.heuristics[2] = self.dlcsLiteral
@@ -238,8 +239,7 @@ class Solver:
 
   def mixedLiteral(self, curVarSet, curCnfList):
     # choose a heuristics randomly and apply
-    heurInd = choice(range(self.numProcesses), 1, self.heurDistribution)[0]
-    return self.heuristics[heurInd](curVarSet, curCnfList) if heurInd < self.numDetermHeurstics else self.randomLiteral(curVarSet, curCnfList)
+    return self.heuristics[choice(range(-1, self.numDetermHeurstics), 1, self.heurDistribution)[0]](curVarSet, curCnfList)
 
   ### update variable set and cnf list when literal is chosen
   def chooseBranch(self, curVarSet, curCnfList, literal):
