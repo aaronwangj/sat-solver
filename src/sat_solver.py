@@ -239,7 +239,7 @@ class Solver:
 
   def mixedLiteral(self, curVarSet, curCnfList):
     # choose a heuristics randomly and apply
-    return self.heuristics[random.choice((range(self.numDetermHeurstics)))](curVarSet, curCnfList)
+    return self.heuristics[random.choice((range(self.numDetermHeurstics)), [0.5, 0.2, 0.2, 0.1])](curVarSet, curCnfList)
 
   ### update variable set and cnf list when literal is chosen
   def chooseBranch(self, curVarSet, curCnfList, literal):
@@ -311,7 +311,7 @@ def main():
     return
   solver = Solver(args[1])
   res = solver.solve()
-  # print(json.dumps(res))
+  print(json.dumps(res))
 
 if __name__ == '__main__':
   main()
