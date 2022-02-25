@@ -228,6 +228,7 @@ class Solver:
     return bestVariable if scores[bestVariable] > scores[-bestVariable] else -bestVariable  
 
   def mixedLiteral(self, curVarSet, curCnfList):
+    # choose a heuristics randomly and apply
     return self.heuristics[random.choice((range(self.numDetermHeurstics)))](curVarSet, curCnfList)
 
   ### update variable set and cnf list when literal is chosen
