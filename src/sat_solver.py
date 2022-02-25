@@ -55,6 +55,7 @@ class Solver:
       self.processes[i].start()
     while self.done.value == -1: # wait until one process finishes
       continue
+    print(self.done.value)
     end_time = time.time()
 
     # terminate processes
