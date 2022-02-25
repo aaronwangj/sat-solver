@@ -11,7 +11,6 @@ class Solver:
   cnfList = []
   filename = ''
   varSize = 0
-  cnfSize = 0
   def __init__(self, filename):
     f = open(filename, 'r')
     line = f.readline()
@@ -22,7 +21,6 @@ class Solver:
     varSize = int(tokens[2])
     cnfSize = int(tokens[3])
     self.varSize = varSize
-    self.cnfSize = cnfSize
     self.varSet = set(range(1, varSize+1))
     self.cnfList = []
     for _ in range(cnfSize):
