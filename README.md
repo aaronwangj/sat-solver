@@ -24,8 +24,6 @@ The solver class uses four processes, each of which uses one of two-sided Jerosl
 
 An additional process, which uses mixed strategy is introduced. On each node on the search tree, a heuristics is sampled randomly from distribution `heurDistribution`. `heurDistribution[0]` is the probability that a branching literal is chosen purely randomly, while `heurDistribution[1]`, `heurDistribution[2]`, `heurDistribution[3]`, and `heurDistribution[4]` are probabilities that a branching literal is chosen using two-sided Jeroslow-Wang, Jeroslow-Wang, DLCS, and DLIS respectively. It is possible to change the distribution or add more deterministic heuristics by modifying lines 30-39 in `src/sat_solver.py`.
 
-<!-- Our initial strategy was to implement the DPLL algorithm without removing any of the unit or pure literals and utilizing a random literal heuristic, and we found that, although this algorithm would eventually find the correct solution, it took much too long and was not viable for a final submission. However, this preliminary iteration ensured that we were on the right track and were familiar with the logistics of the leaderboard and Gradescope. Our next iteration implemented unit propagation, pure-literal elimination, and the Jeroslow-Wang heuristic. All three of these greatly improved our results. We found that the double-sided Jeroslow-Wang did not make as much of an improvement over the single-sided Jeroslow-Wang as either did over the random-literal method. Our initial implementation of unit propagation pure-literal elimination only utilized them on the first iteration, which was unable to solve many of the examples on Gradescope. After converting our code such that unit propagation and pure-literal elimination was run on every recursive iteration, we found that most of the examples were solveable, except for a few. After adding multi-processing, our algorithm solved all examples on Gradescope. Our multiprocessing strategy runs 5 separate processes each that picks a heuristic to use based on a pre-defined distribution (explained below). This idea allows us to essentially hedge our exposure away from one particular heuristic and allows for stochastisticity of the algorithm, a necessity for random restarting. In the end, we end up not using random restarts since our algorithm was able to solve all of the examples each in under 5 minutes. We also tried to use a JIT compiler to speed up our Python code, but found it overly difficult to re-write our entire codebase to follow Numba's documentation, especially since our current algorithm already solves all examples within the time constraint. -->
-
 ## Experiments and Results
 
 Experiments were done on department machines. `logs` directory contains all the log files for experiments with different strategies (Note that all log files are results from independent instances of `runAll.sh`):
@@ -38,11 +36,9 @@ Experiments were done on department machines. `logs` directory contains all the 
 
 For most times, one deterministic strategy outperformed other deterministic strategies and mixed strategy, even though the best deterministic strategy is different for each instance. However, there were some instaces where randomness seemed to make the search more efficient:
 
-- `uniform1.log`: `C1597_081`
-- `weighted1.log`: `C1597_060`
-- `weighted2.log`: `C1597_060`
-- `weighted3.log`: `U50_4450_035`
-- `randomAndWeighted1.log`: `C1597_081`
+- `C1597_081` in `uniform1.log` and `randomAndWeighted1.log` 
+- `C1597_060` in `weighted1.log` and `weighted2.log`: `C1597_060`
+- `U50_4450_035` in `weighted3.log`
 
 The best overall total time was from `weighted1.log`, so it is copied to the root directory as `results.log`. (+ The current strategy in the source code is the one used in `weighted` logs.) Note that all the improved instances were satisfiable. This was somehow expected since solving `UNSAT` instances means that we need to make sure that **all branches** fail; it must be generally harder to find variables that would fail early, if exist.
 
@@ -52,14 +48,11 @@ Instead of choosing heuristics identically for all nodes on the search tree, we 
 
 We could have also implemented switching concurrently between two possibile branches of a variable instead of sequentially traversing one branch and then the other one. Using threads may be helpful here, but we need to make sure that we do not double the number of threads for every depth to avoid concurrency issues like thread contention.
 
-An idea we tried to implement was to use random restarts to avoid heavy-tailed behavior, a technique that all of the modern SAT solvers utilize. After implementing it, however, we found that it was difficult to tune the hyperparameters necessary to really make use of the random restarts, and thus we decided to not use it for our final implementation (though the code is in our random_restart branch). We also tried to use a JIT compiler to speed up our Python code, but found it overly difficult to re-write our entire codebase to follow Numba's documentation, especially since our current algorithm already solves all examples within the time constraint.
-
+Lastly, we tried to implement random restarts to avoid heavy-tailed behavior, a technique that all of the modern SAT solvers utilize. After implementing it, however, we found that it was difficult to tune the hyperparameters necessary to really make use of the random restarts, and thus we decided to not use it for our final implementation (though the code is in our random_restart branch). We also tried to use a JIT compiler to speed up our Python code, but found it overly difficult to re-write our entire codebase to follow Numba's documentation.
 
 ## PIIs
-(Aaron, awang167, a)
-
-(Junewoo, jpark49, Computer)
+(Aaron, awang167, a) and (Junewoo, jpark49, Computer)
 
 ## Time spent
 
-12 hrs = 3 hrs (for naive implementation) + 4 hrs (for trying various strategies) + 4 hrs (for experiments) + 1hr (for report)
+12 hrs = 3 hrs (naive implementation) + 4 hrs (various strategies) + 4 hrs (experiments) + 1hr (report)
