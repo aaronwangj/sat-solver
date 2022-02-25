@@ -6,6 +6,8 @@ import time
 import json
 import os
 from tkinter import N
+
+NUMPROCESSES = 4
 class Solver:
   varSet = set()
   cnfList = []
@@ -34,7 +36,7 @@ class Solver:
   def solve(self):
     # shared variables
     self.manager = Manager()
-    self.processes = [None]*4
+    self.processes = [None]*NUMPROCESSES
     self.sat = Value('i', 0)
     self.assignment = Array('i', [0]*self.varSize)
     self.done = Value('i', -1)
@@ -42,14 +44,14 @@ class Solver:
     
     # solve
     start_time = time.time()
-    for i in range(4):
+    for i in range(NUMPROCESSES):
       self.processes[i] = Process(target = self.singleSolve, args = (set(), i,))
       self.processes[i].start()
     while self.done.value == -1: # wait until one process finishes
       continue
     end_time = time.time()
     # terminate processes
-    for i in range(4):
+    for i in range(NUMPROCESSES):
       self.processes[i].terminate()
     # record
     sat = self.sat.value
@@ -75,7 +77,7 @@ class Solver:
     # update the shared result member variables
     self.sat.value = sat
     self.lock.acquire() # to prevent race
-    if self.done.value != -1: # only the first process to acquire the lock can update the assignment
+    if self.done.value != -1: # only the first process that acquires the lock can update the assignment
       return
     for i, elt in enumerate(assignment):
       self.assignment[i] = elt
