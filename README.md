@@ -35,6 +35,7 @@ The best overall total time was from `weighted1.log`, so it is copied to the roo
 Instead of choosing heuristics identically for all nodes in the search tree, we thought about choosing heuristics adaptively based on current situation. For instance, if lengths of clauses vary a lot, it may be better to apply Jerowslow-Wang instead of DLCS or DLIS. Ensemble of heuristics is another option; if two literals have similar Jerowslow-Wang scores, then we may better consult other heuristics instead of strictly following the one with similar scores. 
 
 We could have also switched between two possibile branches of a variable instead of sequentially traversing one branch and then the other one. Using threads may be helpful here, but we need to make sure that we do not double the number of threads for every depth to avoid concurrency issues like thread contention.
+
 ## PIIs
 (Aaron, awang167, a)
 
