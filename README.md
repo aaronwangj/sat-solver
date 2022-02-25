@@ -37,7 +37,7 @@ Experiments were done on department machines. `logs` directory contains all the 
 For most times, one deterministic strategy outperformed other deterministic strategies and mixed strategy, even though the best deterministic strategy is different for each instance. However, there were some instaces where randomness seemed to make the search more efficient:
 
 - `C1597_081` in `uniform1.log` and `randomAndWeighted1.log` 
-- `C1597_060` in `weighted1.log` and `weighted2.log`: `C1597_060`
+- `C1597_060` in `weighted1.log` and `weighted2.log`
 - `U50_4450_035` in `weighted3.log`
 
 The best overall total time was from `weighted1.log`, so it is copied to the root directory as `results.log`. (+ The current strategy in the source code is the one used in `weighted` logs.) Note that all the improved instances were satisfiable. This was somehow expected since solving `UNSAT` instances means that we need to make sure that **all branches** fail; it must be generally harder to find variables that would fail early, if exist.
