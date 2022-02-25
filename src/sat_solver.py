@@ -1,18 +1,19 @@
+from hashlib import new
+from multiprocessing import Process, Value, Array, Manager
 import sys
 import random
 import time
 import json
 import os
-import numba
+from tkinter import N
 import signal
-
-
+random.seed(42)
 class Solver:
   varSet = set()
   cnfList = []
   filename = ''
-  assignment = set()
-  cnt = 0
+  varSize = 0
+  cnfSize = 0
   def __init__(self, filename):
     f = open(filename, 'r')
     line = f.readline()
@@ -22,6 +23,8 @@ class Solver:
     tokens = line.split()
     varSize = int(tokens[2])
     cnfSize = int(tokens[3])
+    self.varSize = varSize
+    self.cnfSize = cnfSize
     self.varSet = set(range(1, varSize+1))
     self.cnfList = []
     for _ in range(cnfSize):
@@ -32,101 +35,159 @@ class Solver:
     f.close()
 
   def solve(self):
-    # start timing
-    result = {}
-    result["Instance"] = self.filename[:-4]
+    self.manager = Manager()
+    self.processes = [None]*4
+    self.sat = Value('i', 0)
+    self.assignment = Array('i', [0]*self.varSize)
+    self.done = Value('i', -1)
+    self.lock = self.manager.Lock()
+    
+    # solve
     start_time = time.time()
-    # remove unit literals
-    sat = False
-    assignment = set()
-    changed = True
-    while changed:
-      sat, tmp1 = self.removeUnitLiterals()
-      if not sat:
-        end_time = time.time()
-        result['Result'] = 'UNSAT'
-        result['Time'] = '%f' % (end_time-start_time)
-        return result
-      tmp2 = self.removePureLiterals()
-      changed = tmp1 or tmp2
-    sat, assignment = self.recursiveSolve(self.varSet, self.cnfList)
-    if sat:
-      assignment = sorted(self.assignment.union(assignment), key = lambda x: abs(x))
+    for i in range(60):
+  # Start the timer. Once 59 seconds are over, a SIGALRM signal is sent.
+      print('ITERATION: ', i + 1)
+      signal.alarm(5)    
+      try:
+        for i in range(4):
+            self.processes[i] = Process(target = self.singleSolve, args = (set(), i,))
+            self.processes[i].start()
+            while self.done.value == -1:
+                continue
+      except TimeoutException:
+        continue # continue the for loop if function A takes more than 5 second
     end_time = time.time()
-    result['Result'] = 'SAT' if sat else 'UNSAT'
+    sat = self.sat.value
+    assignment = self.assignment
+    for i in range(4):
+      self.processes[i].terminate()
+    # record
+    result = {}
+    result["Instance"] = self.filename[:-4] if self.filename[-4:] == '.cnf' else self.filename
     if sat:
+      assignment = sorted(assignment, key = lambda x: abs(x))
       result['Solution'] = ' '.join(['%d true' % (v) if v > 0 else '%d false' % (-v) for v in assignment])
+    result['Result'] = 'SAT' if sat else 'UNSAT'
     result['Time'] = '%.2f' % (end_time-start_time)
     return result
+  
+  def singleSolve(self, assignment, index):
+    heuristics = {}
+    heuristics[0] = self.twoSidedJeroslowWangLiteral
+    heuristics[1] = self.jeroslowWangLiteral
+    heuristics[2] = self.dlcsLiteral
+    heuristics[3] = self.dlisLiteral
+    sat, assignment = self.recursiveSolve(self.cnfList, self.varSet, assignment, heuristics= heuristics[index])
+    self.sat.value = sat
+    self.lock.acquire()
+    if self.done.value != -1:
+      return
+    for i, elt in enumerate(assignment):
+      self.assignment[i] = elt
+    self.done.value = index
+    self.lock.release()
+    return
 
-  def removeUnitLiterals(self):
+  
+  def removeUnitLiterals(self, cnfList, varSet, assignment):
     # go through all clauses
+    assert len(varSet) + len(assignment) == self.varSize
+    newCnfList = []
+    newVarSet = varSet.copy()
+    newAssignment = assignment.copy()
     changed = False
-    for clause in self.cnfList:
+    for clause in cnfList:
       if len(clause) == 1:
         literal = next(iter(clause))
-        if -literal in self.assignment:
-          return False, True
-        elif literal not in self.assignment:
+        if -literal in newAssignment:
+          assert len(newVarSet) + len(newAssignment) == self.varSize
+          return False, True, newCnfList, newVarSet, assignment
+        elif literal not in newAssignment:
           changed = True
-          self.varSet.remove(abs(literal))
-          self.assignment.add(literal)
-    newCnfList = []
-    for clause in self.cnfList:
+          newVarSet.remove(abs(literal))
+          newAssignment.add(literal)
+    for clause in cnfList:
       append = True
       newClause = clause.copy()
       for literal in clause:
-        if literal in self.assignment:
+        if literal in newAssignment:
           append = False
           break
-        if -literal in self.assignment:
+        if -literal in newAssignment:
           newClause.remove(literal)
       if append:
         newCnfList.append(newClause)
-    self.cnfList = newCnfList
-    return True, changed
+    assert len(newVarSet) + len(newAssignment) == self.varSize
+    return True, changed, newCnfList, newVarSet, newAssignment
 
-  def removePureLiterals(self):
+  def removePureLiterals(self, cnfList, varSet, assignment):
+    assert len(varSet) + len(assignment) == self.varSize
+    newCnfList = []
+    newVarSet = varSet.copy()
+    newAssignment = assignment.copy()
     changed = False
     observed = set()
-    for clause in self.cnfList:
+    for clause in cnfList:
       for literal in clause:
         observed.add(literal)
-    newVarSet = self.varSet.copy()
-    for var in self.varSet:
+    for var in varSet:
       if var not in observed or -var not in observed:
         changed = True
         newVarSet.remove(var)
         if -var in observed:
-          self.assignment.add(-var)
+          newAssignment.add(-var)
         else:
-          self.assignment.add(var)
-    newCnfList = []
-    for clause in self.cnfList:
+          newAssignment.add(var)
+    for clause in cnfList:
       append = True
       newClause = clause.copy()
       for literal in clause:
-        if literal in self.assignment:
+        if literal in newAssignment:
           append = False
           break
-        if -literal in self.assignment:
+        if -literal in newAssignment:
           newClause.remove(literal)
       if append:
         newCnfList.append(newClause)
-    self.varSet = newVarSet
-    self.cnfList = newCnfList
-    return changed
+    assert len(newVarSet) + len(newAssignment) == self.varSize
+    return changed, newCnfList, newVarSet, newAssignment
 
-  # @staticmethod
-  # @numba.jit()     
   def randomLiteral(self, curVarSet, curCnfList):
     # purely random
     var = random.sample(curVarSet, 1)[0]
     literal = -var if random.getrandbits(1) else var
     return literal
 
-  # @staticmethod
-  # @numba.jit()     
+  def dlcsLiteral(self, curVarSet, curCnfList):
+    scores = {}
+    for v in curVarSet:
+      scores[v] = 0
+      scores[-v] = 0
+    bestScore = -1
+    bestVariable = 0
+    for clause in curCnfList:
+      for literal in clause:
+        scores[literal] += 1
+        if bestScore < scores[literal] + scores[-literal]:
+          bestScore = scores[literal] + scores[-literal]
+          bestVariable = abs(literal)
+    return bestVariable if scores[bestVariable] > scores[-bestVariable] else -bestVariable
+  
+  def dlisLiteral(self, curVarSet, curCnfList):
+    scores = {}
+    for v in curVarSet:
+      scores[v] = 0
+      scores[-v] = 0
+    bestScore = -1
+    bestLiteral = 0
+    for clause in curCnfList:
+      for literal in clause:
+        scores[literal] += 1
+        if bestScore < scores[literal]:
+          bestScore = scores[literal]
+          bestLiteral = literal
+    return bestLiteral
+
   def jeroslowWangLiteral(self, curVarSet, curCnfList):
     scores = {}
     for v in curVarSet:
@@ -143,8 +204,6 @@ class Solver:
           bestLiteral = literal
     return bestLiteral
 
-  # @staticmethod
-  # @numba.jit()     
   def twoSidedJeroslowWangLiteral(self, curVarSet, curCnfList):
     scores = {}
     for v in curVarSet:
@@ -161,46 +220,63 @@ class Solver:
           bestVariable = abs(literal)
     return bestVariable if scores[bestVariable] > scores[-bestVariable] else -bestVariable  
 
-  # @staticmethod
-  # @numba.jit()     
   def chooseBranch(self, curVarSet, curCnfList, literal):
     newVarSet = curVarSet.copy()
+    assert abs(literal) in newVarSet
     newVarSet.remove(abs(literal))
     newCnfList = []
     for clause in curCnfList:
       if literal in clause:
         continue
       elif -literal in clause:
-        newCnf = clause.copy()
-        newCnf.remove(-literal)
-        newCnfList.append(newCnf)
+        newClause = clause.copy()
+        newClause.remove(-literal)
+        newCnfList.append(newClause)
       else:
         newCnfList.append(clause.copy())
     return newVarSet, newCnfList
 
-  def recursiveSolve(self, curVarSet, curCnfList):
-    self.cnt += 1
-    if self.cnt % 100000 == 0:
-      print('cnt: %d' % (self.cnt))
-    # check initial condition
+  def recursiveSolve(self, curCnfList, curVarSet, assignment, heuristics = None):
+    if heuristics == None:
+      heuristics = self.twoSidedJeroslowWangLiteral
+    # initial condition
     if not curCnfList:
-      return True, curVarSet
+      return True, curVarSet.union(assignment)
     if set() in curCnfList:
       return False, set()
+
+    # remove unit/pure literals
+    changed = True
+    while changed:
+      sat, tmp1, curCnfList, curVarSet, assignment = self.removeUnitLiterals(curCnfList, curVarSet, assignment)
+      if not sat:  
+        return sat, set()
+      tmp2, curCnfList, curVarSet, assignment = self.removePureLiterals(curCnfList, curVarSet, assignment)
+      changed = tmp1 or tmp2
+    if not curCnfList:
+      return True, curVarSet.union(assignment)
+    if set() in curCnfList:
+      return False, set()
+
     # choose a random literal from curVarSet
-    literal = self.jeroslowWangLiteral(curVarSet, curCnfList)
+    literal = heuristics(curVarSet, curCnfList)
+
     # Branch 1
     newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, literal)
-    sat, assignment = self.recursiveSolve(newVarSet, newCnfList)
+    assignment.add(literal)
+    sat, newAssignment = self.recursiveSolve(newCnfList, newVarSet, assignment, heuristics)
     if sat:
-      assignment.add(literal)
-      return sat, assignment
+      return sat, newAssignment
+
     # Try the other branch
+    assignment.remove(literal)
     newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, -literal)
-    sat, assignment = self.recursiveSolve(newVarSet, newCnfList)
+    assignment.add(-literal)
+    sat, newAssignment = self.recursiveSolve(newCnfList, newVarSet, assignment, heuristics)
     if sat:
-      assignment.add(-literal)
-      return sat, assignment
+      return sat, newAssignment
+    
+    # Both branch failed
     return False, set()
     
 class TimeoutException(Exception):   # Custom exception class
@@ -211,32 +287,14 @@ def timeout_handler(signum, frame):   # Custom signal handler
 
 # Change the behavior of SIGALRM
 signal.signal(signal.SIGALRM, timeout_handler)
-
     
-@numba.jit(cache=True)
 def main():
   args = sys.argv
   if len(args) != 2:
     print('usage error : python3 sat_solver.py [FILENAME.cnf]')
     return
   solver = Solver(args[1])
-  for i in range(5):
-    # Start the timer. Once 5 seconds are over, a SIGALRM signal is sent.
-    signal.alarm(59)    
-    # This try/except loop ensures that 
-    #   you'll catch TimeoutException when it's sent.
-    try:
-        res = solver.solve() # Whatever your function that might hang
-        print(json.dumps(res))
-        return
-    except TimeoutException:
-        continue # continue the for loop if function A takes more than 5 second
-
-  res = {}
-  res["Instance"] = args[1][:-4]
-  res["Result"] = 'UNSAT'
-  res['Time'] = 0.00
-
+  res = solver.solve()
   print(json.dumps(res))
 
 if __name__ == '__main__':
