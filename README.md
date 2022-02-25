@@ -1,7 +1,30 @@
 # Project 1: Mass Customization (SAT solver)
 
 ## Solution Strategy
-Our initial strategy was to implement the DPLL algorithm without removing any of the unit or pure literals and utilizing a random literal heuristic, and we found that, although this algorithm would eventually find the correct solution, it took much too long and was not viable for a final submission. However, this preliminary iteration ensured that we were on the right track and were familiar with the logistics of the leaderboard and Gradescope. Our next iteration implemented unit propagation, pure-literal elimination, and the Jeroslow-Wang heuristic. All three of these greatly improved our results. We found that the double-sided Jeroslow-Wang did not make as much of an improvement over the single-sided Jeroslow-Wang as either did over the random-literal method. Our initial implementation of unit propagation pure-literal elimination only utilized them on the first iteration, which was unable to solve many of the examples on Gradescope. After converting our code such that unit propagation and pure-literal elimination was run on every recursive iteration, we found that most of the examples were solveable, except for a few. After adding multi-processing, our algorithm solved all examples on Gradescope. Our multiprocessing strategy runs 5 separate processes each that picks a heuristic to use based on a pre-defined distribution (explained below). This idea allows us to essentially hedge our exposure away from one particular heuristic and allows for stochastisticity of the algorithm, a necessity for random restarting. In the end, we end up not using random restarts since our algorithm was able to solve all of the examples each in under 5 minutes. We also tried to use a JIT compiler to speed up our Python code, but found it overly difficult to re-write our entire codebase to follow Numba's documentation, especially since our current algorithm already solves all examples within the time constraint.
+
+We implemented our solution in an incremntal manner. All of the implementations are simpler or modified version of the DPLL algorithm.
+
+0. Naive Implementation 
+
+Naive implementation chooses random literal, and only removes unit/pure literals once right after it reads the file. It was only able to solve toy examples.
+
+1. Heuristics
+
+Jeroslow-Wang, two-sided Jeroslow-Wang, DLCS, and DLIS heuristics were implemented. We experimented with each of these heuristics but none of them solved more than three instances on Leaderboard.
+
+2. Intermediate unit/pure literal removal
+
+We included unit/pure literal removals on internal nodes on our search tree. Removal is done repeatedly until it does not change the state of the current cnf and unassigned variables. At this point, two-sided Jeroslow-Wang heuristics could solve all but two of the instances on Leaderboard.
+
+3. Multiprocessing
+
+The solver class uses four processes, each of which uses one of two-sided Jeroslow-Wang, Jeroslow-Wang, DLCS, and DLIS heuristics. The threads are terminated when one of them solves the instance. At this point, all instances on Leaderboard could be solved within 5 minutes.
+
+4. Multiprocessing with mixed strategy
+
+Additional process, which uses mixed strategy is introduced. On each node on the search tree, a heuristics is sampled randomly from distribution `heurDistribution`. `heurDistribution[0]` is the probability that a branching literal is chosen purely randomly, while `heurDistribution[1]`, `heurDistribution[2]`, `heurDistribution[3]`, and `heurDistribution[4]` are probabilities that a branching literal is chosen using two-sided Jeroslow-Wang, Jeroslow-Wang, DLCS, and DLIS respectively.
+
+<!-- Our initial strategy was to implement the DPLL algorithm without removing any of the unit or pure literals and utilizing a random literal heuristic, and we found that, although this algorithm would eventually find the correct solution, it took much too long and was not viable for a final submission. However, this preliminary iteration ensured that we were on the right track and were familiar with the logistics of the leaderboard and Gradescope. Our next iteration implemented unit propagation, pure-literal elimination, and the Jeroslow-Wang heuristic. All three of these greatly improved our results. We found that the double-sided Jeroslow-Wang did not make as much of an improvement over the single-sided Jeroslow-Wang as either did over the random-literal method. Our initial implementation of unit propagation pure-literal elimination only utilized them on the first iteration, which was unable to solve many of the examples on Gradescope. After converting our code such that unit propagation and pure-literal elimination was run on every recursive iteration, we found that most of the examples were solveable, except for a few. After adding multi-processing, our algorithm solved all examples on Gradescope. Our multiprocessing strategy runs 5 separate processes each that picks a heuristic to use based on a pre-defined distribution (explained below). This idea allows us to essentially hedge our exposure away from one particular heuristic and allows for stochastisticity of the algorithm, a necessity for random restarting. In the end, we end up not using random restarts since our algorithm was able to solve all of the examples each in under 5 minutes. We also tried to use a JIT compiler to speed up our Python code, but found it overly difficult to re-write our entire codebase to follow Numba's documentation, especially since our current algorithm already solves all examples within the time constraint. -->
 
 ## Experiments and Results
 
