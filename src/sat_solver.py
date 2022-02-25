@@ -27,10 +27,10 @@ class Solver:
       clause = set([int(v) for v in lineSplitted][:-1])
       self.cnfList.append(clause)
     f.close()
-    
+
     # initialize heuristics 
-    self.numDetermHeurstics = 5
-    self.numProcesses = 1
+    self.numDetermHeurstics = 4
+    self.numProcesses = 5
     self.heuristics = {}
     self.heuristics[0] = self.twoSidedJeroslowWangLiteral
     self.heuristics[1] = self.jeroslowWangLiteral
