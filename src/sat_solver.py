@@ -165,7 +165,7 @@ class Solver:
   ### Heuristics to choose a literal
   def randomLiteral(self, curVarSet, curCnfList):
     # purely random
-    var = random.sample(curVarSet, 1)[0]
+    var = random.choice(range(len(curVarSet)))
     literal = -var if random.getrandbits(1) else var
     return literal
 
