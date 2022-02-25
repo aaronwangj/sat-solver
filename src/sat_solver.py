@@ -1,8 +1,6 @@
-from hashlib import new
 from multiprocessing import Process, Value, Array, Manager
 from numpy.random import choice
 import sys, random, time, json, os
-from tkinter import N
 
 class Solver:
   def __init__(self, filename):
