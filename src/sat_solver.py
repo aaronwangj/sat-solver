@@ -60,16 +60,17 @@ class Solver:
 
 
     start_time = time.time()
-    for j in range(20):
+    for j in range(60):
     # Start the timer. Once 59 seconds are over, a SIGALRM signal is sent.
       print('ITERATION: ', j + 1)
-      signal.alarm(15)    
+      signal.alarm(5)    
       try:
         for i in range(self.numProcesses):
           self.processes[i] = Process(target = self.singleSolve, args = (i,))
           self.processes[i].start()
           while self.done.value == -1: # wait until one process finishes
             continue
+        break
       except TimeoutException:
         continue # continue the for loop if function A takes more than 5 second
     end_time = time.time()
