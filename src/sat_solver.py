@@ -56,10 +56,12 @@ class Solver:
     while self.done.value == -1: # wait until one process finishes
       continue
     end_time = time.time()
+
     # terminate processes
     for i in range(self.numProcesses):
       self.processes[i].terminate()
-    # record
+    
+    # record result
     sat = self.sat.value
     assignment = self.assignment
     result = {}
@@ -75,11 +77,12 @@ class Solver:
   def singleSolve(self, assignment, index):
     # run with the corresponding heuristics
     sat, assignment = self.recursiveSolve(self.cnfList, self.varSet, assignment, heuristics= self.heuristics[index])
+
     # update the shared result member variables
-    self.sat.value = sat
     self.lock.acquire() # to prevent race
     if self.done.value != -1: # only the first process that acquires the lock can update the assignment
       return
+    self.sat.value = sat
     for i, elt in enumerate(assignment):
       self.assignment[i] = elt
     self.done.value = index
@@ -92,6 +95,7 @@ class Solver:
     newCnfList = []
     newVarSet = varSet.copy()
     newAssignment = assignment.copy()
+
     # go through all clauses
     changed = False
     for clause in cnfList:
@@ -104,6 +108,7 @@ class Solver:
           changed = True
           newVarSet.remove(abs(literal))
           newAssignment.add(literal)
+    
     # create the newCnfList
     for clause in cnfList:
       append = True
@@ -126,10 +131,12 @@ class Solver:
     newAssignment = assignment.copy()
     changed = False
     observed = set()
+    
     # iterate through the clauses
     for clause in cnfList:
       for literal in clause:
         observed.add(literal)
+    
     # update the assignment
     for var in varSet:
       if var not in observed or -var not in observed:
@@ -139,6 +146,7 @@ class Solver:
           newAssignment.add(-var)
         else:
           newAssignment.add(var)
+    
     # update the clauses
     for clause in cnfList:
       append = True
@@ -250,8 +258,10 @@ class Solver:
 
   ### recursive solver
   def recursiveSolve(self, curCnfList, curVarSet, assignment, heuristics = None):
+    # set heuristics
     if heuristics == None:
       heuristics = self.twoSidedJeroslowWangLiteral
+    
     # initial condition
     if not curCnfList:
       return True, curVarSet.union(assignment)
