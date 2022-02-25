@@ -28,7 +28,7 @@ class Solver:
 
     # initialize heuristics 
     self.numDetermHeurstics = 4
-    self.heurDistribution = [0.03, 0.47, 0.2, 0.2, 0.1] # first probability is for randomLiteral
+    self.heurDistribution = [0.0, 0.5, 0.2, 0.2, 0.1] # first probability is for randomLiteral
     self.numProcesses = 5
     self.heuristics = {}
     self.heuristics[-1] = self.randomLiteral # -1 should be the reserved key for randomLiteral
