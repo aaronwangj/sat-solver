@@ -1,8 +1,18 @@
 from hashlib import new
 from multiprocessing import Process, Value, Array, Manager
 from numpy.random import choice
-import sys, random, time, json, os
+import sys, random, time, json, os, signal
 from tkinter import N
+random.seed(42)
+
+class TimeoutException(Exception):   # Custom exception class
+    pass
+
+def timeout_handler(signum, frame):   # Custom signal handler
+    raise TimeoutException
+
+# Change the behavior of SIGALRM
+signal.signal(signal.SIGALRM, timeout_handler)
 
 class Solver:
   def __init__(self, filename):
@@ -47,15 +57,21 @@ class Solver:
     self.assignment = Array('i', [0]*self.varSize)
     self.done = Value('i', -1)
     self.lock = self.manager.Lock()
-    
-    # solve
+
+
     start_time = time.time()
-    for i in range(self.numProcesses):
-      self.processes[i] = Process(target = self.singleSolve, args = (i,))
-      self.processes[i].start()
-    while self.done.value == -1: # wait until one process finishes
-      continue
-    # print(self.done.value)
+    for i in range(20):
+    # Start the timer. Once 59 seconds are over, a SIGALRM signal is sent.
+      print('ITERATION: ', i + 1)
+      signal.alarm(15)    
+      try:
+        for i in range(self.numProcesses):
+          self.processes[i] = Process(target = self.singleSolve, args = (i,))
+          self.processes[i].start()
+          while self.done.value == -1: # wait until one process finishes
+            continue
+      except TimeoutException:
+        continue # continue the for loop if function A takes more than 5 second
     end_time = time.time()
 
     # terminate processes
