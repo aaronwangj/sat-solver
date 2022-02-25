@@ -18,7 +18,7 @@ We included unit/pure literal removals for internal nodes on our search tree. Re
 
 ### Multiprocessing
 
-The solver class uses four processes, each of which uses one of two-sided Jeroslow-Wang, Jeroslow-Wang, DLCS, and DLIS heuristics. The threads are terminated when one of them solves the instance. At this point, all instances on Leaderboard could be solved within 5 minutes.
+The solver class uses four processes, each of which uses one of two-sided Jeroslow-Wang, Jeroslow-Wang, DLCS, and DLIS heuristics. The processes are terminated when one of them solves the instance. At this point, all instances on Leaderboard could be solved within 5 minutes.
 
 ### Multiprocessing with mixed strategy
 
