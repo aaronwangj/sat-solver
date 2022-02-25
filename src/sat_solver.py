@@ -1,3 +1,4 @@
+from hashlib import new
 import sys
 import random
 import time
@@ -7,7 +8,8 @@ class Solver:
   varSet = set()
   cnfList = []
   filename = ''
-  assignment = set()
+  varSize = 0
+  cnfSize = 0
   def __init__(self, filename):
     f = open(filename, 'r')
     line = f.readline()
@@ -17,6 +19,8 @@ class Solver:
     tokens = line.split()
     varSize = int(tokens[2])
     cnfSize = int(tokens[3])
+    self.varSize = varSize
+    self.cnfSize = cnfSize
     self.varSet = set(range(1, varSize+1))
     self.cnfList = []
     for _ in range(cnfSize):
@@ -24,95 +28,159 @@ class Solver:
       lineSplitted = line.split()
       clause = set([int(v) for v in lineSplitted][:-1])
       self.cnfList.append(clause)
-    print(varSize, cnfSize)
     f.close()
 
   def solve(self):
-    # start timing
+    # remove unit literals
+    # sat = False
+    # assignment = set()
+    # changed = True
+    # while changed:
+    #   sat, tmp1 = self.removeUnitLiterals()
+    #   if not sat:
+    #     end_time = time.time()
+    #     result['Result'] = 'UNSAT'
+    #     result['Time'] = '%f' % (end_time-start_time)
+    #     return result
+    #   tmp2 = self.removePureLiterals()
+    #   changed = tmp1 or tmp2
+    # print(len(self.varSet), len(self.cnfList))
+
+    # solve
+    start_time = time.time()
+    assignment = set()
+    sat, assignment = self.recursiveSolve(self.cnfList, self.varSet, assignment)
+    end_time = time.time()
+    # record
     result = {}
     result["Instance"] = self.filename[:-4] if self.filename[-4:] == '.cnf' else self.filename
-    start_time = time.time()
-    # remove unit literals
-    sat = False
-    assignment = set()
-    changed = True
-    while changed:
-      sat, tmp1 = self.removeUnitLiterals()
-      if not sat:
-        end_time = time.time()
-        result['Result'] = 'UNSAT'
-        result['Time'] = '%f' % (end_time-start_time)
-        return result
-      tmp2 = self.removePureLiterals()
-      changed = tmp1 or tmp2
-    print(len(self.varSet), len(self.cnfList))
-    sat, assignment = self.recursiveSolve(self.varSet, self.cnfList)
     if sat:
-      assignment = sorted(self.assignment.union(assignment), key = lambda x: abs(x))
-    end_time = time.time()
-    result['Result'] = 'SAT' if sat else 'UNSAT'
-    if sat:
+      assignment = sorted(assignment, key = lambda x: abs(x))
       result['Solution'] = ' '.join(['%d true' % (v) if v > 0 else '%d false' % (-v) for v in assignment])
+    result['Result'] = 'SAT' if sat else 'UNSAT'
     result['Time'] = '%f' % (end_time-start_time)
     return result
-
-  def removeUnitLiterals(self):
+  
+  def removeUnitLiterals(self, cnfList, varSet, assignment):
     # go through all clauses
+    assert len(varSet) + len(assignment) == self.varSize
+    newCnfList = []
+    newVarSet = varSet.copy()
+    newAssignment = assignment.copy()
     changed = False
-    for clause in self.cnfList:
+    for clause in cnfList:
       if len(clause) == 1:
         literal = next(iter(clause))
-        if -literal in self.assignment:
-          return False, True
-        elif literal not in self.assignment:
+        if -literal in newAssignment:
+          assert len(newVarSet) + len(newAssignment) == self.varSize
+          return False, True, newCnfList, newVarSet, assignment
+        elif literal not in newAssignment:
           changed = True
-          self.varSet.remove(abs(literal))
-          self.assignment.add(literal)
-    newCnfList = []
-    for clause in self.cnfList:
+          newVarSet.remove(abs(literal))
+          newAssignment.add(literal)
+    for clause in cnfList:
       append = True
       newClause = clause.copy()
       for literal in clause:
-        if literal in self.assignment:
+        if literal in newAssignment:
           append = False
           break
-        if -literal in self.assignment:
+        if -literal in newAssignment:
           newClause.remove(literal)
       if append:
         newCnfList.append(newClause)
-    self.cnfList = newCnfList
-    return True, changed
+    assert len(newVarSet) + len(newAssignment) == self.varSize
+    return True, changed, newCnfList, newVarSet, newAssignment
 
-  def removePureLiterals(self):
+  def removePureLiterals(self, cnfList, varSet, assignment):
+    assert len(varSet) + len(assignment) == self.varSize
+    newCnfList = []
+    newVarSet = varSet.copy()
+    newAssignment = assignment.copy()
     changed = False
     observed = set()
-    for clause in self.cnfList:
+    for clause in cnfList:
       for literal in clause:
         observed.add(literal)
-    newVarSet = self.varSet.copy()
-    for var in self.varSet:
+    for var in varSet:
       if var not in observed or -var not in observed:
         changed = True
         newVarSet.remove(var)
         if -var in observed:
-          self.assignment.add(-var)
+          newAssignment.add(-var)
         else:
-          self.assignment.add(var)
-    newCnfList = []
-    for clause in self.cnfList:
+          newAssignment.add(var)
+    for clause in cnfList:
       append = True
       newClause = clause.copy()
       for literal in clause:
-        if literal in self.assignment:
+        if literal in newAssignment:
           append = False
           break
-        if -literal in self.assignment:
+        if -literal in newAssignment:
           newClause.remove(literal)
       if append:
         newCnfList.append(newClause)
-    self.varSet = newVarSet
-    self.cnfList = newCnfList
-    return changed
+    assert len(newVarSet) + len(newAssignment) == self.varSize
+    return changed, newCnfList, newVarSet, newAssignment
+
+  # def removeUnitLiterals(self):
+  #   # go through all clauses
+  #   changed = False
+  #   for clause in self.cnfList:
+  #     if len(clause) == 1:
+  #       literal = next(iter(clause))
+  #       if -literal in self.assignment:
+  #         return False, True
+  #       elif literal not in self.assignment:
+  #         changed = True
+  #         self.varSet.remove(abs(literal))
+  #         self.assignment.add(literal)
+  #   newCnfList = []
+  #   for clause in self.cnfList:
+  #     append = True
+  #     newClause = clause.copy()
+  #     for literal in clause:
+  #       if literal in self.assignment:
+  #         append = False
+  #         break
+  #       if -literal in self.assignment:
+  #         newClause.remove(literal)
+  #     if append:
+  #       newCnfList.append(newClause)
+  #   self.cnfList = newCnfList
+  #   return True, changed
+
+  # def removePureLiterals(self):
+  #   changed = False
+  #   observed = set()
+  #   for clause in self.cnfList:
+  #     for literal in clause:
+  #       observed.add(literal)
+  #   newVarSet = self.varSet.copy()
+  #   for var in self.varSet:
+  #     if var not in observed or -var not in observed:
+  #       changed = True
+  #       newVarSet.remove(var)
+  #       if -var in observed:
+  #         self.assignment.add(-var)
+  #       else:
+  #         self.assignment.add(var)
+  #   newCnfList = []
+  #   for clause in self.cnfList:
+  #     append = True
+  #     newClause = clause.copy()
+  #     for literal in clause:
+  #       if literal in self.assignment:
+  #         append = False
+  #         break
+  #       if -literal in self.assignment:
+  #         newClause.remove(literal)
+  #     if append:
+  #       newCnfList.append(newClause)
+  #   self.varSet = newVarSet
+  #   self.cnfList = newCnfList
+  #   return changed
 
   def randomLiteral(self, curVarSet, curCnfList):
     # purely random
@@ -184,40 +252,78 @@ class Solver:
 
   def chooseBranch(self, curVarSet, curCnfList, literal):
     newVarSet = curVarSet.copy()
+    assert abs(literal) in newVarSet
     newVarSet.remove(abs(literal))
     newCnfList = []
     for clause in curCnfList:
       if literal in clause:
         continue
       elif -literal in clause:
-        newCnf = clause.copy()
-        newCnf.remove(-literal)
-        newCnfList.append(newCnf)
+        newClause = clause.copy()
+        newClause.remove(-literal)
+        newCnfList.append(newClause)
       else:
         newCnfList.append(clause.copy())
     return newVarSet, newCnfList
 
-  def recursiveSolve(self, curVarSet, curCnfList):
-    # check initial condition
+  def recursiveSolve(self, curCnfList, curVarSet, assignment):
     if not curCnfList:
-      return True, curVarSet
+      return True, curVarSet.union(assignment)
     if set() in curCnfList:
       return False, set()
+    # remove unit/pure literals
+    changed = True
+    newCnfList = curCnfList.copy()
+    newVarSet = curVarSet.copy()
+    newAssignment = assignment.copy()
+    while changed:
+      sat, tmp1, newCnfList, newVarSet, newAssignment = self.removeUnitLiterals(newCnfList, newVarSet, newAssignment)
+      if not sat:  
+        return sat, set()
+      tmp2, newCnfList, newVarSet, newAssignment = self.removePureLiterals(newCnfList, newVarSet, newAssignment)
+      changed = tmp1 or tmp2
+    if not newCnfList:
+      return True, newVarSet.union(newAssignment)
+    if set() in newCnfList:
+      return False, set()
     # choose a random literal from curVarSet
-    literal = self.dlcsLiteral(curVarSet, curCnfList)
+    literal = self.twoSidedJeroslowWangLiteral(newVarSet, newCnfList)
     # Branch 1
-    newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, literal)
-    sat, assignment = self.recursiveSolve(newVarSet, newCnfList)
+    newNewVarSet, newNewCnfList = self.chooseBranch(newVarSet, newCnfList, literal)
+    newAssignment.add(literal)
+    sat, newNewAssignment = self.recursiveSolve(newNewCnfList, newNewVarSet, newAssignment)
     if sat:
-      assignment.add(literal)
-      return sat, assignment
+      return sat, newNewAssignment
     # Try the other branch
-    newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, -literal)
-    sat, assignment = self.recursiveSolve(newVarSet, newCnfList)
+    newNewVarSet, newNewCnfList = self.chooseBranch(newVarSet, newCnfList, -literal)
+    newAssignment.remove(literal)
+    newAssignment.add(-literal)
+    sat, newNewAssignment = self.recursiveSolve(newNewCnfList, newNewVarSet, newAssignment)
     if sat:
-      assignment.add(-literal)
-      return sat, assignment
+      return sat, newNewAssignment
     return False, set()
+
+  # def recursiveSolve(self, curVarSet, curCnfList):
+  #   # check initial condition
+  #   if not curCnfList:
+  #     return True, curVarSet
+  #   if set() in curCnfList:
+  #     return False, set()
+  #   # choose a random literal from curVarSet
+  #   literal = self.dlcsLiteral(curVarSet, curCnfList)
+  #   # Branch 1
+  #   newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, literal)
+  #   sat, assignment = self.recursiveSolve(newVarSet, newCnfList)
+  #   if sat:
+  #     assignment.add(literal)
+  #     return sat, assignment
+  #   # Try the other branch
+  #   newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, -literal)
+  #   sat, assignment = self.recursiveSolve(newVarSet, newCnfList)
+  #   if sat:
+  #     assignment.add(-literal)
+  #     return sat, assignment
+  #   return False, set()
     
     
 
