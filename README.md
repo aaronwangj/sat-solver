@@ -2,7 +2,7 @@
 
 ## Solution Strategy
 
-We implemented our solution in an incremntal manner. All of the implementations are simpler or modified version of the DPLL algorithm.
+We implemented our solution in an incremental manner. All of the implementations are simpler or modified version of the DPLL algorithm.
 
 ### Naive Implementation 
 
