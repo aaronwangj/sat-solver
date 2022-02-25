@@ -28,7 +28,7 @@ For most times, one deterministic strategy outperformed other deterministic stra
 - `weighted3.log`: `U50_4450_035`
 - `randomAndWeighted1.log`: `C1597_081`
 
-The best overall total time was from `weighted1.log`, so it is copied in the root directory as `results.log`. (+ The current strategy in the source code is the one used in `weighted` logs.) Note that all the improved instances were satisfiable. This was somehow expected since solving `UNSAT` instances means that we need to make sure that **all branches** fail. Also, it must be generally harder to find variables that would fail early.
+The best overall total time was from `weighted1.log`, so it is copied in the root directory as `results.log`. (+ The current strategy in the source code is the one used in `weighted` logs.) Note that all the improved instances were satisfiable. This was somehow expected since solving `UNSAT` instances means that we need to make sure that **all branches** fail; it must be generally harder to find variables that would fail early, if exist.
 
 ## More ideas
 ## PIIs
