@@ -60,9 +60,9 @@ class Solver:
 
 
     start_time = time.time()
-    for i in range(20):
+    for j in range(20):
     # Start the timer. Once 59 seconds are over, a SIGALRM signal is sent.
-      print('ITERATION: ', i + 1)
+      print('ITERATION: ', j + 1)
       signal.alarm(15)    
       try:
         for i in range(self.numProcesses):
