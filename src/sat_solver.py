@@ -292,7 +292,7 @@ class Solver:
     # Branch 1
     newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, literal)
     assignment.add(literal)
-    sat, newAssignment = self.recursiveSolve(curCnfList, newVarSet, assignment)
+    sat, newAssignment = self.recursiveSolve(newCnfList, newVarSet, assignment)
     if sat:
       return sat, newAssignment
 
@@ -300,7 +300,7 @@ class Solver:
     assignment.remove(literal)
     newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, -literal)
     assignment.add(-literal)
-    sat, newAssignment = self.recursiveSolve(curCnfList, newVarSet, assignment)
+    sat, newAssignment = self.recursiveSolve(newCnfList, newVarSet, assignment)
     if sat:
       return sat, newAssignment
     
