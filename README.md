@@ -28,11 +28,11 @@ For most times, one deterministic strategy outperformed other deterministic stra
 - `weighted3.log`: `U50_4450_035`
 - `randomAndWeighted1.log`: `C1597_081`
 
-The best overall total time was from `weighted1.log`, so it is copied in the root directory as `results.log`. (+ The current strategy in the source code is the one used in `weighted` logs.) Note that all the improved instances were satisfiable. This was somehow expected since solving `UNSAT` instances means that we need to make sure that **all branches** fail; it must be generally harder to find variables that would fail early, if exist.
+The best overall total time was from `weighted1.log`, so it is copied to the root directory as `results.log`. (+ The current strategy in the source code is the one used in `weighted` logs.) Note that all the improved instances were satisfiable. This was somehow expected since solving `UNSAT` instances means that we need to make sure that **all branches** fail; it must be generally harder to find variables that would fail early, if exist.
 
 ## More ideas
 
-Instead of choosing heuristics identically for all nodes in the search tree, we thought about choosing heuristics adaptively based on current situation. For instance, if lengths of clauses do not vary much, it may be better to just apply DLCS rather than strict Jerowslow-Wang heuristics. Ensemble of heuristics is another option; if two literals have similar Jerowslow-Wang scores, then we may better consult other heuristics instead of strictly following the one with similar scores. 
+Instead of choosing heuristics identically for all nodes in the search tree, we thought about choosing heuristics adaptively based on current situation. For instance, if lengths of clauses vary a lot, it may be better to apply Jerowslow-Wang instead of DLCS or DLIS. Ensemble of heuristics is another option; if two literals have similar Jerowslow-Wang scores, then we may better consult other heuristics instead of strictly following the one with similar scores. 
 
 We could have also switched between two possibile branches of a variable instead of sequentially traversing one branch and then the other one. Using threads may be helpful here, but we need to make sure that we do not double the number of threads for every depth to avoid concurrency issues like thread contention.
 ## PIIs
