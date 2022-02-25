@@ -52,6 +52,9 @@ Instead of choosing heuristics identically for all nodes on the search tree, we 
 
 We could have also implemented switching concurrently between two possibile branches of a variable instead of sequentially traversing one branch and then the other one. Using threads may be helpful here, but we need to make sure that we do not double the number of threads for every depth to avoid concurrency issues like thread contention.
 
+An idea we tried to implement was to use random restarts to avoid heavy-tailed behavior, a technique that all of the modern SAT solvers utilize. After implementing it, however, we found that it was difficult to tune the hyperparameters necessary to really make use of the random restarts, and thus we decided to not use it for our final implementation (though the code is in our random_restart branch). We also tried to use a JIT compiler to speed up our Python code, but found it overly difficult to re-write our entire codebase to follow Numba's documentation, especially since our current algorithm already solves all examples within the time constraint.
+
+
 ## PIIs
 (Aaron, awang167, a)
 
