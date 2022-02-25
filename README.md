@@ -14,7 +14,7 @@ Jeroslow-Wang, two-sided Jeroslow-Wang, DLCS, and DLIS heuristics were implement
 
 ### Intermediate unit/pure literal removal
 
-We included unit/pure literal removals for internal nodes on our search tree. Removal is done repeatedly until it does not change the state of the current cnf and unassigned variables. At this point, two-sided Jeroslow-Wang heuristics could solve all but two of the instances on Leaderboard.
+We included unit/pure literal removals for internal nodes on our search tree. Removal is done repeatedly until it does not change the state of the current CNF and unassigned variables. At this point, two-sided Jeroslow-Wang heuristics could solve all but two of the instances on Leaderboard.
 
 ### Multiprocessing
 
