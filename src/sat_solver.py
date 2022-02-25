@@ -36,7 +36,7 @@ class Solver:
     self.heuristics[1] = self.jeroslowWangLiteral
     self.heuristics[2] = self.dlcsLiteral
     self.heuristics[3] = self.dlisLiteral
-    self.heuristics[self.numDetermHeurstics] = self.mixedLiteral
+    self.heuristics[self.numDetermHeurstics] = self.mixedLiteral # numDetermHeuristics is reserved for mixedLiteral
 
   ### multiprocessor solve function
   def solve(self):
