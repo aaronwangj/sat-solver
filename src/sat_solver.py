@@ -1,5 +1,5 @@
 from hashlib import new
-from multiprocessing import Process, Value, Array
+from multiprocessing import Process, Value, Array, Manager
 import sys
 import random
 import time
@@ -33,10 +33,13 @@ class Solver:
     f.close()
 
   def solve(self):
+    self.manager = Manager()
     self.processes = [None]*4
     self.sat = Value('i', 0)
     self.assignment = Array('i', [0]*self.varSize)
     self.done = Value('i', -1)
+    self.lock = self.manager.Lock()
+    
     # solve
     start_time = time.time()
     for i in range(4):
@@ -67,9 +70,13 @@ class Solver:
     heuristics[3] = self.dlisLiteral
     sat, assignment = self.recursiveSolve(self.cnfList, self.varSet, assignment, heuristics= heuristics[index])
     self.sat.value = sat
+    self.lock.acquire()
+    if self.done.value != -1:
+      return
     for i, elt in enumerate(assignment):
       self.assignment[i] = elt
     self.done.value = index
+    self.lock.release()
     return
 
   
