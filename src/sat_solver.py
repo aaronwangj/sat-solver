@@ -7,13 +7,9 @@ import json
 import os
 from tkinter import N
 
-NUMPROCESSES = 4
 class Solver:
-  varSet = set()
-  cnfList = []
-  filename = ''
-  varSize = 0
   def __init__(self, filename):
+    # parse the file
     f = open(filename, 'r')
     line = f.readline()
     self.filename = os.path.basename(os.path.normpath(filename))
@@ -31,12 +27,22 @@ class Solver:
       clause = set([int(v) for v in lineSplitted][:-1])
       self.cnfList.append(clause)
     f.close()
+    
+    # initialize heuristics 
+    self.numDetermHeurstics = 5
+    self.numProcesses = 1
+    self.heuristics = {}
+    self.heuristics[0] = self.twoSidedJeroslowWangLiteral
+    self.heuristics[1] = self.jeroslowWangLiteral
+    self.heuristics[2] = self.dlcsLiteral
+    self.heuristics[3] = self.dlisLiteral
+    self.heuristics[4] = self.mixedLiteral
 
   ### multiprocessor solve function
   def solve(self):
     # shared variables
     self.manager = Manager()
-    self.processes = [None]*NUMPROCESSES
+    self.processes = [None]*self.numProcesses
     self.sat = Value('i', 0)
     self.assignment = Array('i', [0]*self.varSize)
     self.done = Value('i', -1)
@@ -44,14 +50,14 @@ class Solver:
     
     # solve
     start_time = time.time()
-    for i in range(NUMPROCESSES):
+    for i in range(self.numProcesses):
       self.processes[i] = Process(target = self.singleSolve, args = (set(), i,))
       self.processes[i].start()
     while self.done.value == -1: # wait until one process finishes
       continue
     end_time = time.time()
     # terminate processes
-    for i in range(NUMPROCESSES):
+    for i in range(self.numProcesses):
       self.processes[i].terminate()
     # record
     sat = self.sat.value
@@ -67,13 +73,8 @@ class Solver:
   
   ### single-processor solve function
   def singleSolve(self, assignment, index):
-    heuristics = {}
-    heuristics[0] = self.twoSidedJeroslowWangLiteral
-    heuristics[1] = self.jeroslowWangLiteral
-    heuristics[2] = self.dlcsLiteral
-    heuristics[3] = self.dlisLiteral
     # run with the corresponding heuristics
-    sat, assignment = self.recursiveSolve(self.cnfList, self.varSet, assignment, heuristics= heuristics[index])
+    sat, assignment = self.recursiveSolve(self.cnfList, self.varSet, assignment, heuristics= self.heuristics[index])
     # update the shared result member variables
     self.sat.value = sat
     self.lock.acquire() # to prevent race
@@ -225,6 +226,9 @@ class Solver:
           bestScore = scores[literal] + scores[-literal]
           bestVariable = abs(literal)
     return bestVariable if scores[bestVariable] > scores[-bestVariable] else -bestVariable  
+
+  def mixedLiteral(self, curVarSet, curCnfList):
+    return self.heuristics[random.choice((range(self.numDetermHeurstics)))](curVarSet, curCnfList)
 
   ### update variable set and cnf list when literal is chosen
   def chooseBranch(self, curVarSet, curCnfList, literal):
