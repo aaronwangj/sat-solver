@@ -4,23 +4,23 @@
 
 We implemented our solution in an incremntal manner. All of the implementations are simpler or modified version of the DPLL algorithm.
 
-0. Naive Implementation 
+### Naive Implementation 
 
 Naive implementation chooses random literal, and only removes unit/pure literals once right after it reads the file. It was only able to solve toy examples.
 
-1. Heuristics
+### Heuristics
 
 Jeroslow-Wang, two-sided Jeroslow-Wang, DLCS, and DLIS heuristics were implemented. We experimented with each of these heuristics but none of them solved more than three instances on Leaderboard.
 
-2. Intermediate unit/pure literal removal
+### Intermediate unit/pure literal removal
 
 We included unit/pure literal removals on internal nodes on our search tree. Removal is done repeatedly until it does not change the state of the current cnf and unassigned variables. At this point, two-sided Jeroslow-Wang heuristics could solve all but two of the instances on Leaderboard.
 
-3. Multiprocessing
+### Multiprocessing
 
 The solver class uses four processes, each of which uses one of two-sided Jeroslow-Wang, Jeroslow-Wang, DLCS, and DLIS heuristics. The threads are terminated when one of them solves the instance. At this point, all instances on Leaderboard could be solved within 5 minutes.
 
-4. Multiprocessing with mixed strategy
+### Multiprocessing with mixed strategy
 
 Additional process, which uses mixed strategy is introduced. On each node on the search tree, a heuristics is sampled randomly from distribution `heurDistribution`. `heurDistribution[0]` is the probability that a branching literal is chosen purely randomly, while `heurDistribution[1]`, `heurDistribution[2]`, `heurDistribution[3]`, and `heurDistribution[4]` are probabilities that a branching literal is chosen using two-sided Jeroslow-Wang, Jeroslow-Wang, DLCS, and DLIS respectively.
 
