@@ -267,40 +267,44 @@ class Solver:
     return newVarSet, newCnfList
 
   def recursiveSolve(self, curCnfList, curVarSet, assignment):
+    # initial condigion
     if not curCnfList:
       return True, curVarSet.union(assignment)
     if set() in curCnfList:
       return False, set()
+
     # remove unit/pure literals
     changed = True
-    newCnfList = curCnfList.copy()
-    newVarSet = curVarSet.copy()
-    newAssignment = assignment.copy()
     while changed:
-      sat, tmp1, newCnfList, newVarSet, newAssignment = self.removeUnitLiterals(newCnfList, newVarSet, newAssignment)
+      sat, tmp1, curCnfList, curVarSet, assignment = self.removeUnitLiterals(curCnfList, curVarSet, assignment)
       if not sat:  
         return sat, set()
-      tmp2, newCnfList, newVarSet, newAssignment = self.removePureLiterals(newCnfList, newVarSet, newAssignment)
+      tmp2, curCnfList, curVarSet, assignment = self.removePureLiterals(curCnfList, curVarSet, assignment)
       changed = tmp1 or tmp2
-    if not newCnfList:
-      return True, newVarSet.union(newAssignment)
-    if set() in newCnfList:
+    if not curCnfList:
+      return True, curVarSet.union(assignment)
+    if set() in curCnfList:
       return False, set()
+
     # choose a random literal from curVarSet
-    literal = self.twoSidedJeroslowWangLiteral(newVarSet, newCnfList)
+    literal = self.twoSidedJeroslowWangLiteral(curVarSet, curCnfList)
+
     # Branch 1
-    newNewVarSet, newNewCnfList = self.chooseBranch(newVarSet, newCnfList, literal)
-    newAssignment.add(literal)
-    sat, newNewAssignment = self.recursiveSolve(newNewCnfList, newNewVarSet, newAssignment)
+    newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, literal)
+    assignment.add(literal)
+    sat, newAssignment = self.recursiveSolve(curCnfList, newVarSet, assignment)
     if sat:
-      return sat, newNewAssignment
+      return sat, newAssignment
+
     # Try the other branch
-    newNewVarSet, newNewCnfList = self.chooseBranch(newVarSet, newCnfList, -literal)
-    newAssignment.remove(literal)
-    newAssignment.add(-literal)
-    sat, newNewAssignment = self.recursiveSolve(newNewCnfList, newNewVarSet, newAssignment)
+    assignment.remove(literal)
+    newVarSet, newCnfList = self.chooseBranch(curVarSet, curCnfList, -literal)
+    assignment.add(-literal)
+    sat, newAssignment = self.recursiveSolve(curCnfList, newVarSet, assignment)
     if sat:
-      return sat, newNewAssignment
+      return sat, newAssignment
+    
+    # Both branch failed
     return False, set()
 
   # def recursiveSolve(self, curVarSet, curCnfList):
