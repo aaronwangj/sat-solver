@@ -5,6 +5,7 @@ import random
 import time
 import json
 import os
+from tkinter import N
 class Solver:
   varSet = set()
   cnfList = []
@@ -36,7 +37,6 @@ class Solver:
     self.sat = Value('i', 0)
     self.assignment = Array('i', [0]*self.varSize)
     self.done = Value('i', -1)
-    self.heuristics = [self.twoSidedJeroslowWangLiteral, self.jeroslowWangLiteral, self.dlcsLiteral, self.dlisLiteral]
     # solve
     start_time = time.time()
     for i in range(4):
@@ -60,7 +60,12 @@ class Solver:
     return result
   
   def singleSolve(self, assignment, index):
-    sat, assignment = self.recursiveSolve(self.cnfList, self.varSet, assignment, heuristics= self.heuristics[index])
+    heuristics = {}
+    heuristics[0] = self.twoSidedJeroslowWangLiteral
+    heuristics[1] = self.jeroslowWangLiteral
+    heuristics[2] = self.dlcsLiteral
+    heuristics[3] = self.dlisLiteral
+    sat, assignment = self.recursiveSolve(self.cnfList, self.varSet, assignment, heuristics= heuristics[index])
     self.sat.value = sat
     for i, elt in enumerate(assignment):
       self.assignment[i] = elt
